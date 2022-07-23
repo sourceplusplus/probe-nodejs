@@ -28,6 +28,17 @@ class LiveInstrumentRemote {
             console.log(e);
         }
 
+        this.start();
+    }
+
+    private start() {
+        // Register this event before enabling the debugger so we receive all previously loaded scripts as well
+        this.session.on('Debugger.scriptParsed', message => {
+            console.log(message);
+
+            this.sourceMapper.map(message.params.scriptId, message.params.url, message.params.sourceMapURL);
+        });
+
         this.session.post("Debugger.enable", {}, (err, res) => {
             if (err) {
                 console.log(err);
@@ -40,12 +51,6 @@ class LiveInstrumentRemote {
     private enabled() {
         this.session.post("Debugger.setBreakpointsActive", {
             active: true
-        });
-
-        this.session.on('Debugger.scriptParsed', message => {
-            console.log(message);
-
-            this.sourceMapper.map(message.params.scriptId, message.params.url, message.params.sourceMapURL);
         });
 
         this.session.on('Debugger.paused', message => {
