@@ -1,0 +1,15 @@
+{
+  "name": "sourceplusplus",
+  "description": "Live coding probe for Node.js applications",
+  "version": "1.0.0",
+  "author": "MrMineO5",
+  "devDependencies": {
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "@types/node": "^18.0.6",
+    "@vertx/eventbus-bridge-client.js": "^1.0.0-3-SNAPSHOT",
+    "skywalking-backend-js": "^0.5.1",
+    "vlq": "^2.0.4"
+  }
+}

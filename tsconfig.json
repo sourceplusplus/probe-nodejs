@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "target": "es6",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "typeRoots": [
+      "node_modules/@types",
+      "src/local-types"
+    ],
+    "paths": {
+      "@vertx/eventbus-bridge-client.js": [
+        "./src/local-types/vertx__eventbus__bridge__client.js"
+      ]
+    }
+  },
+  "lib": [
+    "es2015"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/local-types/**"
+  ]
+}
