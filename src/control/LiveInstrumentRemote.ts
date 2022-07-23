@@ -12,12 +12,18 @@ export interface VariableInfo {
     global: Runtime.PropertyDescriptor[]
 }
 
+interface CachedInstrument {
+    instrument: LiveInstrument
+    timeCached: number
+}
+
 class LiveInstrumentRemote {
     instruments: Map<string, LiveInstrument> = new Map<string, LiveInstrument>();
     session: inspector.Session;
     sourceMapper: SourceMapper;
     locationToBreakpointId: Map<string, string> = new Map<string, string>();
     breakpointIdToInstrumentIds: Map<string, string[]> = new Map<string, string[]>();
+    instrumentCache: Map<string, CachedInstrument>;
 
     constructor() {
         this.session = new inspector.Session();
@@ -28,7 +34,7 @@ class LiveInstrumentRemote {
             console.log(e);
         }
 
-        this.sourceMapper = new SourceMapper()
+        this.sourceMapper = new SourceMapper(this.scriptLoaded.bind(this));
 
         this.start();
     }
@@ -130,6 +136,15 @@ class LiveInstrumentRemote {
         });
     }
 
+    private scriptLoaded(sourceLocation: string, scriptId: string) {
+        this.instrumentCache.forEach(cachedInstrument => {
+            if (cachedInstrument.instrument.location.source == sourceLocation) {
+                this.instrumentCache.delete(cachedInstrument.instrument.id);
+                this.addInstrument(cachedInstrument.instrument);
+            }
+        });
+    }
+
     private getVariable(objectId: string, remainingDepth: number): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.session.post("Runtime.getProperties", {
@@ -177,8 +192,10 @@ class LiveInstrumentRemote {
         let location = this.sourceMapper.mapLocation(instrument.location);
 
         if (!location) {
-            // TODO: Some kind of cache that waits for the source file to become available
-            setTimeout(() => this.addInstrument(instrument), 500);
+            this.instrumentCache.set(instrument.id, {
+                instrument: instrument,
+                timeCached: Date.now()
+            });
             return;
         }
 
@@ -203,7 +220,11 @@ class LiveInstrumentRemote {
     removeInstrument(instrumentId: string) {
         let instrument = this.instruments.get(instrumentId);
 
-        if (!instrument) return;
+        if (!instrument) {
+            // If the instrument is not enabled, try removing it from the cache
+            this.instrumentCache.delete(instrumentId);
+            return;
+        }
 
         // Remove the instrument
         this.instruments.delete(instrumentId);
@@ -230,6 +251,16 @@ class LiveInstrumentRemote {
 
         // Remove the breakpoint id from the instrument meta (just in case)
         instrument.meta.breakpointId = null;
+    }
+
+    // TODO: Call this regularly to clean up old instruments
+    private cleanCache() {
+        let now = Date.now();
+        this.instrumentCache.forEach((value, key) => {
+            if (now - value.timeCached > 1000 * 60 * 60) {
+                this.instrumentCache.delete(key);
+            }
+        });
     }
 
     test() {

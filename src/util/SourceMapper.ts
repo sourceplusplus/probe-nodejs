@@ -5,10 +5,13 @@ import LiveSourceLocation from "../model/LiveSourceLocation";
 import * as vlq from 'vlq';
 
 export default class SourceMapper {
-    mapped: Map<String, MappedFile>
+    scriptLoaded: (sourceLocation: string, scriptId: string) => void;
+    mapped: Map<string, MappedFile>
 
-    constructor() {
-        this.mapped = new Map<String, MappedFile>();
+    constructor(scriptLoaded: (sourceLocation: string, scriptId: string) => void) {
+        this.scriptLoaded = scriptLoaded;
+
+        this.mapped = new Map<string, MappedFile>();
     }
 
     map(scriptId: string, fileUrl: string, sourcemapFile?: string) {
@@ -24,6 +27,7 @@ export default class SourceMapper {
         if (!sourcemapFile || !fs.existsSync(`${dirPath}/${sourcemapFile}`)) {
             let relative = path.relative(basePath, filePath);
             this.mapped.set(relative, new MappedFile(scriptId));
+            this.scriptLoaded(relative, scriptId);
             return;
         }
 
@@ -36,7 +40,10 @@ export default class SourceMapper {
             let sourcemap = JSON.parse(data.toString());
 
             parseSourceMap(scriptId, sourcemap, dirPath)
-                .forEach((file, source) => this.mapped.set(source, file))
+                .forEach((file, source) => {
+                    this.mapped.set(source, file);
+                    this.scriptLoaded(source, scriptId);
+                });
         });
     }
 
@@ -84,7 +91,7 @@ class MappedFile {
     }
 }
 
-function parseSourceMap(scriptId: string, sourcemap: any, dirPath: string): Map<String, MappedFile> {
+function parseSourceMap(scriptId: string, sourcemap: any, dirPath: string): Map<string, MappedFile> {
     // TODO: Somehow handle sources being in a different directory, for example if only the contents of the dist folder is uploaded
     // TODO: Handle running node in a different directory
     let basePath = process.cwd();
@@ -125,7 +132,7 @@ function parseSourceMap(scriptId: string, sourcemap: any, dirPath: string): Map<
         }
     }
 
-    let map = new Map<String, MappedFile>();
+    let map = new Map<string, MappedFile>();
     for (let i = 0; i < sources.length; i++) {
         map.set(sources[i], mappedFiles[i]);
     }
