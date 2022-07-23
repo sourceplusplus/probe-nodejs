@@ -15,7 +15,7 @@ export interface VariableInfo {
 class LiveInstrumentRemote {
     instruments: Map<string, LiveInstrument> = new Map<string, LiveInstrument>();
     session: inspector.Session;
-    sourceMapper = new SourceMapper();
+    sourceMapper: SourceMapper;
     locationToBreakpointId: Map<string, string> = new Map<string, string>();
     breakpointIdToInstrumentIds: Map<string, string[]> = new Map<string, string[]>();
 
@@ -28,14 +28,14 @@ class LiveInstrumentRemote {
             console.log(e);
         }
 
+        this.sourceMapper = new SourceMapper()
+
         this.start();
     }
 
     private start() {
         // Register this event before enabling the debugger so we receive all previously loaded scripts as well
         this.session.on('Debugger.scriptParsed', message => {
-            console.log(message);
-
             this.sourceMapper.map(message.params.scriptId, message.params.url, message.params.sourceMapURL);
         });
 
@@ -177,8 +177,8 @@ class LiveInstrumentRemote {
         let location = this.sourceMapper.mapLocation(instrument.location);
 
         if (!location) {
-            // TODO: Some kind of queue that waits for the source file to become available
-            setTimeout(() => this.addInstrument(instrument), 1000);
+            // TODO: Some kind of cache that waits for the source file to become available
+            setTimeout(() => this.addInstrument(instrument), 500);
             return;
         }
 
@@ -235,8 +235,15 @@ class LiveInstrumentRemote {
     test() {
         let location = this.sourceMapper.mapLocation({
             source: "src/test.ts",
-            line: 6
+            line: 10
         });
+
+        if (!location) {
+            setTimeout(this.test.bind(this), 500);
+            return;
+        }
+
+        console.log(location);
 
 
         this.setBreakpoint(location.scriptId, location.line).then(breakpointId => {
