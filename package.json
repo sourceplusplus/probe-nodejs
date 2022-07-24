@@ -1,13 +1,16 @@
 {
   "name": "sourceplusplus",
   "description": "Live coding probe for Node.js applications",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "MrMineO5",
   "homepage": "https://sourceplus.plus/",
   "repository": "https://github.com/MrMineO5/probe-nodejs",
   "main": "dist/SourcePlusPlus.js",
   "types": "dist/SourcePlusPlus.d.ts",
-  "files": ["/dist", "README.md"],
+  "files": [
+    "/dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"
