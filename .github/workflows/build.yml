@@ -30,6 +30,11 @@ jobs:
           distribution: 'adopt'
           cache: gradle
 
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
       - name: Export Properties
         id: properties
         shell: bash
