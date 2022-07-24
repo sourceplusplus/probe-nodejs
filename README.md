@@ -1,8 +1,8 @@
 # ![](https://github.com/sourceplusplus/live-platform/blob/master/.github/media/sourcepp_logo.svg)
 
 [![License](https://img.shields.io/github/license/sourceplusplus/probe-python)](LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/sourceplusplus?color=blue)](https://pypi.org/project/sourceplusplus/)
-[![E2E](https://github.com/sourceplusplus/probe-python/actions/workflows/e2e.yml/badge.svg)](https://github.com/sourceplusplus/probe-python/actions/workflows/e2e.yml)
+<!--[![NPM](https://img.shields.io/npm/v/sourceplusplus?color=blue)](https://www.npmjs.com/package/sourceplusplus)-->
+<!--[![E2E](https://github.com/sourceplusplus/probe-python/actions/workflows/e2e.yml/badge.svg)](https://github.com/sourceplusplus/probe-python/actions/workflows/e2e.yml)-->
 
 # What is this?
 
