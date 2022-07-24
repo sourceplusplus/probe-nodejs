@@ -35,6 +35,9 @@ jobs:
         with:
           node-version: 16
 
+      - name: Install dependencies
+        run: npm install
+
       - name: Export Properties
         id: properties
         shell: bash
