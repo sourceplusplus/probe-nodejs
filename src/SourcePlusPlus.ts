@@ -80,11 +80,11 @@ namespace SourcePlusPlus {
             caData = `-----BEGIN CERTIFICATE-----\\n${probeConfig.spp.probe_certificate}\\n-----END CERTIFICATE-----`;
         }
 
-        let url = `${probeConfig.spp.platform_host}:${probeConfig.spp.platform_port}`;
+        let url = `${probeConfig.spp.platform_host}:12800`; //todo: configurable port
         url = probeConfig.spp.ssl_enabled ? `https://${url}` : `http://${url}`;
 
         // TODO: SSL context
-        let eventBus = new EventBus(url);
+        let eventBus = new EventBus(url + "/probe/eventbus");
 
         return new Promise<void>((resolve, reject) => {
             eventBus.onopen = () => {
