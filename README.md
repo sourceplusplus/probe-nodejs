@@ -10,7 +10,7 @@ This project provides Node.js support to the [Source++](https://github.com/sourc
 
 # Usage
 
-- `npm i sourceplusplus` TODO
+- `npm i sourceplusplus`
 
 ## Attach
 
