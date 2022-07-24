@@ -1,14 +1,6 @@
 import LiveSourceLocation from "./LiveSourceLocation";
 import LiveInstrumentType from "./LiveInstrumentType";
-import InstrumentThrottle from "./throttle/InstrumentThrottle";
 import HitThrottle from "./throttle/HitThrottle";
-import LiveBreakpoint from "./instruments/LiveBreakpoint";
-import LiveInstrumentCommand from "./command/LiveInstrumentCommand";
-import LiveLog from "./instruments/LiveLog";
-import LiveMeter from "./instruments/LiveMeter";
-import LiveSpan from "./instruments/LiveSpan";
-import MeterType from "./meter/MeterType";
-import MetricValue from "./meter/MetricValue";
 
 export default class LiveInstrument {
     location: LiveSourceLocation
