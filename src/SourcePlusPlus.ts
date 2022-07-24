@@ -13,7 +13,7 @@ namespace SourcePlusPlus {
         let env_value = process.env[env];
         if (env_value) {
             return parser(env_value);
-        } else if (!!def) {
+        } else if (def !== undefined) {
             return def;
         } else {
             return trueDef;
