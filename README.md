@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/github/license/sourceplusplus/probe-python)](LICENSE)
 [![NPM](https://img.shields.io/npm/v/sourceplusplus?color=blue)](https://www.npmjs.com/package/sourceplusplus)
-<!--[![E2E](https://github.com/sourceplusplus/probe-python/actions/workflows/e2e.yml/badge.svg)](https://github.com/sourceplusplus/probe-python/actions/workflows/e2e.yml)-->
+[![E2E](https://github.com/MrMineO5/probe-nodejs/actions/workflows/build.yml/badge.svg)](https://github.com/MrMineO5/probe-nodejs/actions/workflows/build.yml)
 
 # What is this?
 
