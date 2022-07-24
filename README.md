@@ -13,13 +13,19 @@ This project provides Node.js support to the [Source++](https://github.com/sourc
 - `npm i sourceplusplus`
 
 ## Attach
+### Plain javascript
+```javascript
+const SourcePlusPlus = require("sourceplusplus");
+SourcePlusPlus.start();
+```
 
+### Typescript
 ```node
 import SorcePlusPlus from "sourceplusplus";
 SourcePlusPlus.start();
 ```
 
-### Config
+## Config
 
 Add `spp-probe.yml` to working directory (or set `SPP_PROBE_CONFIG_FILE` env):
 
