@@ -1,8 +1,23 @@
 declare module '@vertx/eventbus-bridge-client.js' {
-    class EventBus {
-        constructor(host: string, port: number, options: any);
+    interface EventBusOptions {
+        vertxbus_ping_interval?: number;
+        vertxbus_reconnect_attempts_max?: number;
+        vertxbus_reconnect_delay_min?: number;
+        vertxbus_reconnect_delay_max?: number;
+        vertxbus_reconnect_exponent?: number;
+        vertxbus_randomization_factor?: number;
 
-        sendPing(): void;
+    }
+
+    class EventBus {
+        onopen: () => void;
+
+        constructor(host: string, options?: any);
+
+        send(address: string, message: any, headers: any | undefined, callback)
+        publish(address: string, message: any, options?: any): void;
+        registerHandler(address: string, headers: any, callback: (err: any | undefined, body: any | undefined) => void): void;
+        unregisterHandler(address: string, headers: any, callback: (err: any | undefined, body: any | undefined) => void): void;
     }
 
     export = EventBus;

@@ -1,10 +1,10 @@
-import LiveInstrumentRemote from './control/LiveInstrumentRemote';
+import SourcePlusPlus from "./SourcePlusPlus";
 
-
-const test = require('./test')
-
-test.testFunc();
-
-LiveInstrumentRemote.test();
-
-console.log(test.testFunc());
+SourcePlusPlus.start();
+//
+// const test = require('./test')
+//
+// test.testFunc();
+//
+//
+// console.log(test.testFunc());

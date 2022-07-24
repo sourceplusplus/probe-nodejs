@@ -24,4 +24,18 @@ export default class HitThrottle implements InstrumentThrottle {
         this.totalLimitedCount++;
         return true;
     }
+
+    toJson(): any {
+        return {
+            limit: this.limit,
+            step: this.step
+        };
+    }
+
+    static fromJson(json: any): HitThrottle {
+        const throttle = new HitThrottle();
+        throttle.limit = json.limit;
+        throttle.step = ThrottleStep[ThrottleStep[json.step]]; // TODO: This doesn't seem like the right way to do this
+        return throttle;
+    }
 }

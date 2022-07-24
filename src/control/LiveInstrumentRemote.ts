@@ -5,6 +5,9 @@ import ContextReceiver from "./ContextReceiver";
 import LiveInstrumentType from "../model/LiveInstrumentType";
 import LiveLog from "../model/instruments/LiveLog";
 import LiveMeter from "../model/instruments/LiveMeter";
+import EventBus from "@vertx/eventbus-bridge-client.js";
+import LiveInstrumentCommand from "../model/command/LiveInstrumentCommand";
+import CommandType from "../model/command/CommandType";
 
 export interface VariableInfo {
     block: Runtime.PropertyDescriptor[]
@@ -17,15 +20,18 @@ interface CachedInstrument {
     timeCached: number
 }
 
-class LiveInstrumentRemote {
+export default class LiveInstrumentRemote {
     instruments: Map<string, LiveInstrument> = new Map<string, LiveInstrument>();
     session: inspector.Session;
     sourceMapper: SourceMapper;
     locationToBreakpointId: Map<string, string> = new Map<string, string>();
     breakpointIdToInstrumentIds: Map<string, string[]> = new Map<string, string[]>();
     instrumentCache: Map<string, CachedInstrument>;
+    eventBus: EventBus;
 
-    constructor() {
+    constructor(eventBus: EventBus) {
+        this.eventBus = eventBus;
+
         this.session = new inspector.Session();
 
         try {
@@ -204,6 +210,7 @@ class LiveInstrumentRemote {
             this.breakpointIdToInstrumentIds.get(breakpointId).push(instrument.id);
             this.instruments.set(instrument.id, instrument);
             instrument.meta.breakpointId = breakpointId;
+            this.eventBus.publish("spp.processor.status.live-instrument-applied", instrument.toJson())
             return;
         }
 
@@ -212,6 +219,7 @@ class LiveInstrumentRemote {
             this.breakpointIdToInstrumentIds.set(breakpointId, [instrument.id]);
             this.instruments.set(instrument.id, instrument);
             instrument.meta.breakpointId = breakpointId;
+            this.eventBus.publish("spp.processor.status.live-instrument-applied", instrument.toJson())
         }).catch(err => {
             console.log(err);
         });
@@ -253,6 +261,21 @@ class LiveInstrumentRemote {
         instrument.meta.breakpointId = null;
     }
 
+    handleInstrumentCommand(command: LiveInstrumentCommand) {
+        if (command.commandType === CommandType.ADD_LIVE_INSTRUMENT) {
+            command.instruments.forEach(this.addInstrument.bind(this));
+        } else if (command.commandType === CommandType.REMOVE_LIVE_INSTRUMENT) {
+            command.instruments.forEach(this.removeInstrument.bind(this));
+            command.locations.forEach(location => {
+                this.instruments.forEach(instrument => {
+                    if (instrument.location.source == location.source && instrument.location.line == location.line) {
+                        this.removeInstrument(instrument.id);
+                    }
+                })
+            });
+        }
+    }
+
     // TODO: Call this regularly to clean up old instruments
     private cleanCache() {
         let now = Date.now();
@@ -282,8 +305,3 @@ class LiveInstrumentRemote {
         });
     }
 }
-
-let
-    instance = new LiveInstrumentRemote();
-
-export default instance;
