@@ -278,6 +278,7 @@ export default class LiveInstrumentRemote {
     }
 
     // TODO: Call this regularly to clean up old instruments
+    // TODO: Ensure the cache doesn't get too large
     private cleanCache() {
         let now = Date.now();
         this.instrumentCache.forEach((value, key) => {

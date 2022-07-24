@@ -43,8 +43,11 @@ sourceSets.test {
 
 tasks {
     register("cleanPackDir") {
-        file("pack/").delete()
-        file("pack/").mkdirs()
+        file("pack/").listFiles()?.forEach { it.delete() }
+    }
+
+    register("cleanE2EDir") {
+        file("e2e/").listFiles()?.forEach { if (it.name.endsWith(".tgz")) it.delete() }
     }
 
     register<Exec>("makeDist") {
@@ -60,7 +63,7 @@ tasks {
     }
 
     register<Copy>("updateDockerFiles") {
-        dependsOn("buildDist")
+        dependsOn("buildDist", "cleanE2EDir")
         from("pack/")
         into("e2e/")
     }
