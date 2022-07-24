@@ -6,3 +6,4 @@ e2e/sourceplusplus-*.tgz
 *.iml
 node_modules/
 .gradle/
+build/

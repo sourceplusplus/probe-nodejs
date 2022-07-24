@@ -286,23 +286,4 @@ export default class LiveInstrumentRemote {
             }
         });
     }
-
-    test() {
-        let location = this.sourceMapper.mapLocation({
-            source: "src/test.ts",
-            line: 10
-        });
-
-        if (!location) {
-            setTimeout(this.test.bind(this), 500);
-            return;
-        }
-
-        console.log(location);
-
-
-        this.setBreakpoint(location.scriptId, location.line).then(breakpointId => {
-            console.log(breakpointId);
-        });
-    }
 }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%black(%d{ISO8601}) %highlight(%-5level) %yellow(%logger{15}): %msg%n%throwable</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="spp" level="TRACE"/>
+    <logger name="integration" level="TRACE"/>
+</configuration>
