@@ -32,9 +32,9 @@ class ProbeBreakpointTest : AbstractProbeIntegrationTest() {
 //                    val vars = item.stackTrace.first().variables
 //                    assertEquals(9, vars.size)
                     // TODO
+                    consumer.unregister()
+                    testContext.completeNow()
                 }
-                consumer.unregister()
-                testContext.completeNow()
             }
         }
 

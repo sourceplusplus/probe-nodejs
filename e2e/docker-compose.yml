@@ -19,6 +19,7 @@ services:
     environment:
       - SPP_LOGGING_LEVEL=trace
       - SW_RECEIVER_GRPC_SSL_ENABLED=false #todo: fix this and config.secure = false
+      - SPP_HTTP_SSL_ENABLED=false #todo; Change back to ssl once the library works with self-signed certs
     volumes:
       - ./config/spp-platform.crt:/skywalking/config/spp-platform.crt
       - ./config/spp-platform.key:/skywalking/config/spp-platform.key

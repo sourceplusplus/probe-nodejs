@@ -73,6 +73,22 @@ tasks {
         dependsOn("updateDockerFiles", "composeUp")
     }
     getByName("composeUp").mustRunAfter("updateDockerFiles")
+
+    getByName<Test>("test") {
+        failFast = true
+        useJUnitPlatform()
+//        if (System.getProperty("test.profile") != "integration") {
+//            exclude("integration/**")
+//        }
+
+        testLogging {
+            events("passed", "skipped", "failed")
+            setExceptionFormat("full")
+
+            outputs.upToDateWhen { false }
+            showStandardStreams = true
+        }
+    }
 }
 
 dockerCompose {

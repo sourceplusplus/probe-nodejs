@@ -3,6 +3,7 @@ spp:
   platform_port: 5450
   quiet_mode: false
   verify_host: false
+  ssl_enabled: false
   platform_certificate: |
     MIIFLzCCAxegAwIBAgIGAYG9v8lfMA0GCSqGSIb3DQEBCwUAMBcxFTATBgNVBAMM
     DHNwcC1wbGF0Zm9ybTAeFw0yMjA3MDIwNzExMTFaFw0yMzA3MDIwNzExMTFaMBcx

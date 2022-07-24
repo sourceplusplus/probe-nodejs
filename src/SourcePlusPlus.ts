@@ -30,7 +30,11 @@ namespace SourcePlusPlus {
     let probeConfig: SourcePlusPlusConfig;
     let liveInstrumentRemote: LiveInstrumentRemote;
 
-    export async function start(config?: SourcePlusPlusConfig): Promise<void> {
+    let debug = false;
+
+    export async function start(config?: SourcePlusPlusConfig, paramDebug = false): Promise<void> {
+        debug = paramDebug;
+
         let probeConfigFile = process.env.PROBE_CONFIG_FILE || 'spp-probe.yml';
         probeConfig = {}; // TODO: Make model for this?
         if (fs.existsSync(probeConfigFile)) {
@@ -64,6 +68,8 @@ namespace SourcePlusPlus {
         // Copy given config
         Object.assign(probeConfig, config);
 
+        debugLog("Loaded probe config:", probeConfig);
+
         return attach();
     }
 
@@ -73,7 +79,11 @@ namespace SourcePlusPlus {
         // TODO: logReporterActive doesn't exist?
         config.secure = false; //todo: fix this and SW_RECEIVER_GRPC_SSL_ENABLED=false
 
+        debugLog("Connecting to SkyWalking with config ", config);
+
         agent.start(config);
+
+        debugLog("Connected");
 
         let caData;
         if (probeConfig.spp.ssl_enabled && probeConfig.spp.probe_certificate) {
@@ -83,12 +93,19 @@ namespace SourcePlusPlus {
         let url = `${probeConfig.spp.platform_host}:12800`; //todo: configurable port
         url = probeConfig.spp.ssl_enabled ? `https://${url}` : `http://${url}`;
 
+        debugLog("Connecting to SourcePlusPlus with url:", url);
+
+
         // TODO: SSL context
-        let eventBus = new EventBus(url + "/probe/eventbus");
+        let eventBus = new EventBus(url + "/probe/eventbus", {
+            server: ""
+        });
         eventBus.enableReconnect(true);
 
         return new Promise<void>((resolve, reject) => {
             eventBus.onopen = () => {
+                debugLog("Connected to SourcePlusPlus");
+
                 let promises = [];
                 promises.push(sendConnected(eventBus));
                 liveInstrumentRemote = new LiveInstrumentRemote(eventBus);
@@ -138,6 +155,12 @@ namespace SourcePlusPlus {
             liveInstrumentRemote.handleInstrumentCommand(
                 LiveInstrumentCommand.fromJson(message.body));
         });
+    }
+
+    function debugLog(...args: any[]) {
+        if (debug) {
+            console.log(...args);
+        }
     }
 }
 
