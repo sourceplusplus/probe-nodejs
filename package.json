@@ -1,7 +1,7 @@
 {
   "name": "sourceplusplus",
   "description": "Live coding probe for Node.js applications",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "MrMineO5",
   "homepage": "https://sourceplus.plus/",
   "repository": "https://github.com/MrMineO5/probe-nodejs",
