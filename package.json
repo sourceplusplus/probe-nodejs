@@ -3,6 +3,21 @@
   "description": "Live coding probe for Node.js applications",
   "version": "1.0.0",
   "author": "MrMineO5",
+  "homepage": "https://sourceplus.plus/",
+  "repository": "https://github.com/MrMineO5/probe-nodejs",
+  "main": "dist/SourcePlusPlus.js",
+  "types": "dist/SourcePlusPlus.d.ts",
+  "files": ["/dist", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "@vertx/eventbus-bridge-client.js": "^1.0.0-3-SNAPSHOT",
+    "skywalking-backend-js": "^0.5.1",
+    "vlq": "^2.0.4",
+    "yaml": "^2.1.1"
+  },
   "devDependencies": {
     "typescript": "^4.7.4"
   },

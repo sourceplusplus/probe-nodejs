@@ -15,13 +15,15 @@
       "@vertx/eventbus-bridge-client.js": [
         "./src/local-types/vertx__eventbus__bridge__client.js"
       ]
-    }
+    },
+    "declaration": true
   },
   "lib": [
     "es2015"
   ],
   "exclude": [
     "node_modules",
-    "src/local-types/**"
+    "src/local-types/**",
+    "dist"
   ]
 }
