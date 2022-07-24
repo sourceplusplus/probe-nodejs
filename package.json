@@ -2,9 +2,9 @@
   "name": "sourceplusplus",
   "description": "Live coding probe for Node.js applications",
   "version": "1.0.3",
-  "author": "MrMineO5",
+  "author": "sourceplusplus",
   "homepage": "https://sourceplus.plus/",
-  "repository": "https://github.com/MrMineO5/probe-nodejs",
+  "repository": "https://github.com/sourceplusplus/probe-nodejs",
   "main": "dist/SourcePlusPlus.js",
   "types": "dist/SourcePlusPlus.d.ts",
   "files": [
