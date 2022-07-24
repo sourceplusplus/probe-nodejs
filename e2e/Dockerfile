@@ -10,7 +10,7 @@ COPY E2ETest.js .
 
 ADD ./spp-probe.yml .
 
-RUN mkdir config
-ADD ./config/spp-platform.crt ./config/
+# live-platform uses self-signed cert for testing
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
 CMD ["node", "E2ETest.js"]

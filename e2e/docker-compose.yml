@@ -4,16 +4,8 @@ services:
     container_name: e2e-test
     build:
       context: .
-    depends_on:
-      - spp-platform
-    links:
-      - spp-platform
     ports:
       - "5000:5000"
-    environment:
-      - SPP_PLATFORM_HOST=spp-platform
-      - SPP_OAP_HOST=spp-platform
-      - GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/usr/local/bin/config/spp-platform.crt
   spp-platform:
     image: sourceplusplus/spp-platform:latest
     container_name: spp-platform
@@ -26,13 +18,7 @@ services:
       - "12800:12800"
     environment:
       - SPP_LOGGING_LEVEL=trace
-      - SW_CORE_GRPC_SSL_ENABLED=true
-      - SW_CORE_GRPC_SSL_KEY_PATH=/skywalking/config/spp-platform.key
-      - SW_CORE_GRPC_SSL_CERT_CHAIN_PATH=/skywalking/config/spp-platform.crt
-      - SW_CORE_GRPC_SSL_TRUSTED_CA_PATH=/skywalking/config/spp-platform.crt
-      - SW_RECEIVER_GRPC_SSL_ENABLED=true
-      - SW_RECEIVER_GRPC_SSL_KEY_PATH=/skywalking/config/spp-platform.key
-      - SW_RECEIVER_GRPC_SSL_CERT_CHAIN_PATH=/skywalking/config/spp-platform.crt
+      - SW_RECEIVER_GRPC_SSL_ENABLED=false #todo: fix this and config.secure = false
     volumes:
       - ./config/spp-platform.crt:/skywalking/config/spp-platform.crt
       - ./config/spp-platform.key:/skywalking/config/spp-platform.key

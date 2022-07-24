@@ -13,7 +13,7 @@ namespace SourcePlusPlus {
         let env_value = process.env[env];
         if (env_value) {
             return parser(env_value);
-        } else if (!!def) {
+        } else if (def !== undefined) {
             return def;
         } else {
             return trueDef;
@@ -71,7 +71,7 @@ namespace SourcePlusPlus {
         config.collectorAddress = probeConfig.skywalking.collector.backend_service;
         config.serviceName = probeConfig.skywalking.agent.service_name;
         // TODO: logReporterActive doesn't exist?
-        config.secure = probeConfig.spp.ssl_enabled;
+        config.secure = false; //todo: fix this and SW_RECEIVER_GRPC_SSL_ENABLED=false
 
         agent.start(config);
 
@@ -80,11 +80,12 @@ namespace SourcePlusPlus {
             caData = `-----BEGIN CERTIFICATE-----\\n${probeConfig.spp.probe_certificate}\\n-----END CERTIFICATE-----`;
         }
 
-        let url = `${probeConfig.spp.platform_host}:${probeConfig.spp.platform_port}`;
+        let url = `${probeConfig.spp.platform_host}:12800`; //todo: configurable port
         url = probeConfig.spp.ssl_enabled ? `https://${url}` : `http://${url}`;
 
         // TODO: SSL context
-        let eventBus = new EventBus(url);
+        let eventBus = new EventBus(url + "/probe/eventbus");
+        eventBus.enableReconnect(true);
 
         return new Promise<void>((resolve, reject) => {
             eventBus.onopen = () => {
@@ -141,3 +142,4 @@ namespace SourcePlusPlus {
 }
 
 export default SourcePlusPlus;
+module.exports = SourcePlusPlus; //todo: idk why this is needed for E2ETest.js to work

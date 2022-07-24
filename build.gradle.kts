@@ -8,8 +8,14 @@ tasks {
         file("pack/").mkdirs()
     }
 
-    register<Exec>("buildDist") {
+    register<Exec>("makeDist") {
         dependsOn("cleanPackDir")
+        executable = "npm"
+        args("run", "build")
+    }
+
+    register<Exec>("buildDist") {
+        dependsOn("makeDist")
         executable = "npm"
         args("pack", "--pack-destination=./pack")
     }
