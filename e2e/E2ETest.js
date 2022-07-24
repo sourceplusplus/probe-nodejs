@@ -1,2 +1,4 @@
 const SourcePlusPlus = require("sourceplusplus");
-SourcePlusPlus.start();
+SourcePlusPlus.start().then(() => {
+    // Run tests
+});
