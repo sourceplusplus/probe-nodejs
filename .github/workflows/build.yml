@@ -51,10 +51,13 @@ jobs:
 
       - name: Docker IPs
         run: docker inspect --format='{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aq)
+
       - name: Set E2E_APP_HOST
         run: E2E_APP_HOST=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aqf "name=e2e-test")) && echo "E2E_APP_HOST=$E2E_APP_HOST" >> $GITHUB_ENV
       - name: Set SPP_PLATFORM_HOST
         run: SPP_PLATFORM_HOST=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aqf "name=spp-platform")) && echo "SPP_PLATFORM_HOST=$SPP_PLATFORM_HOST" >> $GITHUB_ENV
+      - name: Set SPP_JWT_TOKEN
+        run: until $(curl --insecure --output /dev/null --silent --fail https://localhost:12800/api/new-token?access_token=change-me); do printf '.'; sleep 5; done && SPP_JWT_TOKEN=$(curl --insecure https://localhost:12800/api/new-token?access_token=change-me) && echo "SPP_JWT_TOKEN=$SPP_JWT_TOKEN" >> $GITHUB_ENV
 
       - name: Wait for platform
         run: |
