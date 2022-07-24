@@ -6,6 +6,7 @@ import agent from "skywalking-backend-js/lib";
 import EventBus from "@vertx/eventbus-bridge-client.js";
 import LiveInstrumentRemote from "./control/LiveInstrumentRemote";
 import LiveInstrumentCommand from "./model/command/LiveInstrumentCommand";
+import SourcePlusPlusConfig from "./model/SourcePlusPlusConfig";
 
 namespace SourcePlusPlus {
     function getConfigValue<T>(env: string, def: T | undefined, trueDef: T, parser: (str: string) => T): T {
@@ -26,10 +27,10 @@ namespace SourcePlusPlus {
     let getConfigValueNumber = (env, def, trueDef) =>
         getConfigValue<number>(env, def, trueDef, (str) => Number(str));
 
-    let probeConfig: any;
+    let probeConfig: SourcePlusPlusConfig;
     let liveInstrumentRemote: LiveInstrumentRemote;
 
-    export function start() {
+    export function start(config?: SourcePlusPlusConfig) {
         let probeConfigFile = process.env.PROBE_CONFIG_FILE || 'spp-probe.yml';
         probeConfig = {}; // TODO: Make model for this?
         if (fs.existsSync(probeConfigFile)) {
@@ -59,6 +60,9 @@ namespace SourcePlusPlus {
 
         probeConfig.skywalking.collector.backend_service = getConfigValueString("SPP_SKYWALKING_BACKEND_SERVICE",
             probeConfig.skywalking.collector.backend_service, `${skywalkingHost}:${skywalkingPort}`);
+
+        // Copy given config
+        Object.assign(probeConfig, config);
 
         attach();
     }
