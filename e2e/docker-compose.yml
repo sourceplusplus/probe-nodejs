@@ -12,7 +12,6 @@ services:
       - "5000:5000"
     environment:
       - SPP_PLATFORM_HOST=spp-platform
-      - SPP_OAP_HOST=spp-platform
       - GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/usr/local/bin/config/spp-platform.crt
   spp-platform:
     image: sourceplusplus/spp-platform:latest
