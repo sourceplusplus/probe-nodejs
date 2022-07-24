@@ -41,22 +41,23 @@ export default class LiveInstrumentRemote {
         }
 
         this.sourceMapper = new SourceMapper(this.scriptLoaded.bind(this));
-
-        this.start();
     }
 
-    private start() {
+    async start(): Promise<void> {
         // Register this event before enabling the debugger so we receive all previously loaded scripts as well
         this.session.on('Debugger.scriptParsed', message => {
             this.sourceMapper.map(message.params.scriptId, message.params.url, message.params.sourceMapURL);
         });
 
-        this.session.post("Debugger.enable", {}, (err, res) => {
-            if (err) {
-                console.log(err);
-            } else {
-                this.enabled();
-            }
+        return new Promise<void>((resolve, reject) => {
+            this.session.post("Debugger.enable", {}, (err, res) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    this.enabled();
+                    resolve();
+                }
+            });
         });
     }
 

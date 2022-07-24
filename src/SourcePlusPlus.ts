@@ -30,7 +30,7 @@ namespace SourcePlusPlus {
     let probeConfig: SourcePlusPlusConfig;
     let liveInstrumentRemote: LiveInstrumentRemote;
 
-    export function start(config?: SourcePlusPlusConfig) {
+    export async function start(config?: SourcePlusPlusConfig): Promise<void> {
         let probeConfigFile = process.env.PROBE_CONFIG_FILE || 'spp-probe.yml';
         probeConfig = {}; // TODO: Make model for this?
         if (fs.existsSync(probeConfigFile)) {
@@ -64,10 +64,10 @@ namespace SourcePlusPlus {
         // Copy given config
         Object.assign(probeConfig, config);
 
-        attach();
+        return attach();
     }
 
-    function attach() {
+    async function attach(): Promise<void> {
         config.collectorAddress = probeConfig.skywalking.collector.backend_service;
         config.serviceName = probeConfig.skywalking.agent.service_name;
         // TODO: logReporterActive doesn't exist?
@@ -85,13 +85,20 @@ namespace SourcePlusPlus {
 
         // TODO: SSL context
         let eventBus = new EventBus(url);
-        eventBus.onopen = () => {
-            sendConnected(eventBus);
-            liveInstrumentRemote = new LiveInstrumentRemote(eventBus);
-        }
+
+        return new Promise<void>((resolve, reject) => {
+            eventBus.onopen = () => {
+                let promises = [];
+                promises.push(sendConnected(eventBus));
+                liveInstrumentRemote = new LiveInstrumentRemote(eventBus);
+                promises.push(liveInstrumentRemote.start());
+
+                Promise.all(promises).then(() => resolve(), reject);
+            }
+        });
     }
 
-    function sendConnected(eventBus: EventBus) {
+    async function sendConnected(eventBus: EventBus): Promise<void> {
         let probeMetadata = {
             language: 'nodejs',
             probe_version: '1.0.0', // TODO
@@ -105,16 +112,19 @@ namespace SourcePlusPlus {
         }
 
         let replyAddress = randomUUID();
-        eventBus.send("spp.platform.status.probe-connected", {
-            instanceId: probeConfig.spp.probe_id,
-            connectionTime: Date.now(),
-            meta: probeMetadata
-        }, undefined, (err, reply) => {
-            if (err) {
-                console.log(err);
-            } else {
-                registerRemotes(eventBus, replyAddress, reply.body);
-            }
+        return new Promise<void>((resolve, reject) => {
+            eventBus.send("spp.platform.status.probe-connected", {
+                instanceId: probeConfig.spp.probe_id,
+                connectionTime: Date.now(),
+                meta: probeMetadata
+            }, undefined, (err, reply) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    registerRemotes(eventBus, replyAddress, reply.body);
+                    resolve();
+                }
+            });
         });
     }
 
