@@ -43,6 +43,7 @@ sourceSets.test {
 
 tasks {
     register("cleanPackDir") {
+        file("pack/").mkdirs()
         file("pack/").listFiles()?.forEach { it.delete() }
     }
 
