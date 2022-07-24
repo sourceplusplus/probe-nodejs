@@ -26,7 +26,7 @@ export default class LiveInstrumentRemote {
     sourceMapper: SourceMapper;
     locationToBreakpointId: Map<string, string> = new Map<string, string>();
     breakpointIdToInstrumentIds: Map<string, string[]> = new Map<string, string[]>();
-    instrumentCache: Map<string, CachedInstrument>;
+    instrumentCache: Map<string, CachedInstrument> = new Map<string, CachedInstrument>();
     eventBus: EventBus;
 
     constructor(eventBus: EventBus) {
