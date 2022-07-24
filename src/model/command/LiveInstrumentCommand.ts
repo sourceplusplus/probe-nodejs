@@ -9,7 +9,7 @@ export default class LiveInstrumentCommand {
 
     static fromJson(json: any): LiveInstrumentCommand {
         const command = new LiveInstrumentCommand();
-        command.commandType = CommandType[json.command_type];
+        command.commandType = CommandType[json.commandType];
         command.instruments = json.instruments.map(instrument => LiveInstrument.fromJson(instrument));
         command.locations = json.locations.map(location => location as LiveSourceLocation);
         return command;
