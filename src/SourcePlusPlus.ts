@@ -71,7 +71,7 @@ namespace SourcePlusPlus {
         config.collectorAddress = probeConfig.skywalking.collector.backend_service;
         config.serviceName = probeConfig.skywalking.agent.service_name;
         // TODO: logReporterActive doesn't exist?
-        config.secure = probeConfig.spp.ssl_enabled;
+        config.secure = false; //todo: fix this and SW_RECEIVER_GRPC_SSL_ENABLED=false
 
         agent.start(config);
 
@@ -85,6 +85,7 @@ namespace SourcePlusPlus {
 
         // TODO: SSL context
         let eventBus = new EventBus(url + "/probe/eventbus");
+        eventBus.enableReconnect(true);
 
         return new Promise<void>((resolve, reject) => {
             eventBus.onopen = () => {
@@ -141,3 +142,4 @@ namespace SourcePlusPlus {
 }
 
 export default SourcePlusPlus;
+module.exports = SourcePlusPlus; //todo: idk why this is needed for E2ETest.js to work
