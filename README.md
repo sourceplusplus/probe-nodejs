@@ -6,6 +6,8 @@
 
 # What is this?
 
+> Note: This project is a work in progress. Not all features are implemented yet.
+
 This project provides Node.js support to the [Source++](https://github.com/sourceplusplus/live-platform) open-source live coding platform.
 
 # Usage
