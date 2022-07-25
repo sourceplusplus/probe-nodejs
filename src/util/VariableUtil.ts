@@ -22,6 +22,10 @@ namespace VariableUtil {
         return variables;
     }
 
+    export function encodeVariables(variables: Runtime.PropertyDescriptor[]) {
+        return variables.map(encodeVariable);
+    }
+
     export function encodeVariable(variable: Runtime.PropertyDescriptor) {
         if (!variable.value) {
             return JSON.stringify({
@@ -51,7 +55,8 @@ namespace VariableUtil {
         };
         obj[variable.name] = "";
         if (variable.value.value) {
-            if (variable.value.type !== 'object') { // TODO: Handle arrays
+            // Arrays are also objects, so no special handling is necessary
+            if (variable.value.type !== 'object') {
                 obj[variable.name] = value;
             } else {
                 obj[variable.name] = variable.value.value.reduce((acc, v) => {

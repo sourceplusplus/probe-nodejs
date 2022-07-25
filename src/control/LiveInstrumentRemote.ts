@@ -179,6 +179,7 @@ export default class LiveInstrumentRemote {
 
                     let promises = [];
                     for (let variable of result) {
+                        if (!variable.value.objectId) continue;
                         promises.push(this.getVariable(variable.value.objectId, newRemainingDepth)
                             .then(res => variable.value.value = res));
                     }
@@ -313,7 +314,7 @@ export default class LiveInstrumentRemote {
     test() {
         let instrument = new LiveBreakpoint();
         instrument.id = randomUUID();
-        instrument.location = {source: "test/javascript/test.js", line: 5};
+        instrument.location = {source: "test/javascript/test.js", line: 8};
         instrument.hitLimit = 1;
         instrument.applyImmediately = true;
         instrument.applied = false;
