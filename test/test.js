@@ -84,6 +84,13 @@ describe('Add Live Breakpoint', function () {
             assert.equal(response.status, 200);
         })
 
+        it('add has no errors', function () {
+            assert.equal(
+                response.data.errors,
+                null
+            )
+        })
+
         it('verify location', function () {
             assert.equal(
                 response.data.data.addLiveBreakpoint.location.source,
@@ -101,17 +108,74 @@ describe('Add Live Breakpoint', function () {
                 20
             )
         });
+
+        it('remove breakpoint', function () {
+            return removeLiveInstrument(response.data.data.addLiveBreakpoint.id).then(function (res) {
+                response = res;
+            })
+        });
+
+        it('200 status code', function () {
+            assert.equal(response.status, 200);
+        })
+
+        it('remove has no errors', function () {
+            assert.equal(
+                response.data.errors,
+                null
+            )
+        })
     });
 });
 
 describe('NodeJS Probe', function () {
-    xit("connect test probe to platform", function () {
-        const SourcePlusPlus = require("../src/SourcePlusPlus.ts");
-        SourcePlusPlus.start().then(function (spp) {
-            console.log("SourcePlusPlus started");
-        }).catch(function (err) {
-            console.log(err);
+    const SourcePlusPlus = require("../dist/SourcePlusPlus.js");
+    let instrumentId;
+    let response;
+
+    describe("connect test probe to platform", function () {
+        before(function () {
+            return SourcePlusPlus.start().then(function (spp) {
+                console.log("SourcePlusPlus started");
+            }).catch(function (err) {
+                assert.fail(err);
+            });
         });
+
+        it('add live breakpoint', function () {
+            addLiveBreakpoint({
+                "source": "test.js",
+                "line": 10
+            }, 20).then(function (res) {
+                assert.equal(res.status, 200);
+                instrumentId = res.data.data.addLiveBreakpoint.id;
+            }).catch(function (err) {
+                assert.fail(err)
+            });
+        });
+
+        it('verify probe is aware of breakpoint', async function () {
+            this.timeout(6000)
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            assert.equal(SourcePlusPlus.liveInstrumentRemote.instrumentCache.size, 1);
+        });
+
+        it('remove breakpoint', function () {
+            return removeLiveInstrument(instrumentId).then(function (res) {
+                response = res;
+            })
+        });
+
+        it('200 status code', function () {
+            assert.equal(response.status, 200);
+        })
+
+        it('remove has no errors', function () {
+            assert.equal(
+                response.data.errors,
+                null
+            )
+        })
     });
 });
 
@@ -130,6 +194,24 @@ function addLiveBreakpoint(location, hitLimit) {
                     "location": location,
                     "hitLimit": hitLimit
                 }
+            }
+        }
+    };
+    return axios.request(options);
+}
+
+function removeLiveInstrument(id) {
+    const options = {
+        method: 'POST',
+        url: `${host}/graphql/spp`,
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + SYSTEM_JWT_TOKEN
+        },
+        data: {
+            "query": "mutation ($id: String!) { removeLiveInstrument(id: $id) { id } }",
+            "variables": {
+                "id": id
             }
         }
     };
