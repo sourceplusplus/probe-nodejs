@@ -19,7 +19,7 @@ export default class LiveInstrument {
         if (this.expiresAt && this.expiresAt < Date.now()) {
             return true;
         }
-        if (this.hitLimit > 0 && this.hitLimit <= this.throttle.totalHitCount) {
+        if (this.throttle && this.hitLimit > 0 && this.hitLimit <= this.throttle.totalHitCount) {
             return true;
         }
         return false;

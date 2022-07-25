@@ -28,42 +28,6 @@ namespace ContextReceiver {
         return `${frame.url} - ${frame.functionName}(${frame.location.lineNumber})`;
     }
 
-    function encodeVariable(variable: Runtime.PropertyDescriptor) {
-        if (!variable.value) {
-            return JSON.stringify({
-                '@class': "null",
-                '@id': 'null',
-                '@skip': 'Error: No variable value'
-            });
-        }
-        let clazz, id, value;
-        if (variable.value.type === 'object') {
-            clazz = variable.value.className;
-            id = variable.value.objectId;
-            value = ""; // TODO: Include variable value
-        } else if (variable.value.type === 'function') {
-            // TODO: Correctly handle these, variable.value.description contains the entire class/function definition
-            clazz = 'function';
-            id = variable.value.objectId;
-        } else {
-            clazz = variable.value.type;
-            id = ""; // Primitive types don't have an object id
-            value = variable.value.value;
-        }
-
-        let obj = {
-            '@class': clazz,
-            '@id': id
-        };
-        obj[variable.name] = "";
-
-        return JSON.stringify(obj);
-    }
-
-    export function test(variables) {
-        console.log(tryFindVariable('i', variables));
-    }
-
     export function applyMeter(liveMeterId: string, variables) {
         // TODO: implement
     }
@@ -120,8 +84,6 @@ namespace ContextReceiver {
         stream.write(logData);
 
         stream.end();
-
-
     }
 }
 

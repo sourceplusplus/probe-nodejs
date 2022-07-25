@@ -50,8 +50,6 @@ export default class SourceMapper {
     mapLocation(location: LiveSourceLocation): MappedLocation {
         let mappedFile: MappedFile = this.mapped.get(location.source);
 
-        console.log(mappedFile);
-
         if (!mappedFile) return undefined;
 
         return {
