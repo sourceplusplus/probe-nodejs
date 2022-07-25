@@ -64,3 +64,56 @@ describe('Clients', function () {
         });
     });
 });
+
+describe('Add Live Breakpoint', function () {
+    let response;
+    describe('/graphql', function () {
+        before(function () {
+            const options = {
+                method: 'POST',
+                url: `${host}/graphql/spp`,
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: 'Bearer ' + SYSTEM_JWT_TOKEN
+                },
+                data: {
+                    "query": "mutation ($input: LiveBreakpointInput!) { addLiveBreakpoint(input: $input) { id location { source line } condition expiresAt hitLimit applyImmediately applied pending throttle { limit step } } }",
+                    "variables": {
+                        "input": {
+                            "location": {
+                                "source": "test.js",
+                                "line": 10
+                            },
+                            "hitLimit": 20
+                        }
+                    }
+                }
+            };
+            return axios.request(options).then(function (res) {
+                response = res;
+            })
+        });
+
+        it('200 status code', function () {
+            assert.equal(response.status, 200);
+        })
+
+        it('verify location', function () {
+            assert.equal(
+                response.data.data.addLiveBreakpoint.location.source,
+                "test.js"
+            )
+            assert.equal(
+                response.data.data.addLiveBreakpoint.location.line,
+                10
+            )
+        });
+
+        it('verify hit limit', function () {
+            assert.equal(
+                response.data.data.addLiveBreakpoint.hitLimit,
+                20
+            )
+        });
+    });
+});
