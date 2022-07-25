@@ -4,6 +4,10 @@ services:
     container_name: e2e-test
     build:
       context: .
+    depends_on:
+      - spp-platform
+    links:
+      - spp-platform
     ports:
       - "5000:5000"
   spp-platform:
@@ -11,8 +15,6 @@ services:
     container_name: spp-platform
     hostname: spp-platform
     ports:
-      - "5450:5450"
-      - "5455:5455"
       - "11800:11800"
       - "11801:11801" #todo: shouldn't be necessary
       - "12800:12800"

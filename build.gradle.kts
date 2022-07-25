@@ -1,44 +1,5 @@
 plugins {
     id("com.avast.gradle.docker-compose") version "0.16.8"
-    id("org.jetbrains.kotlin.jvm") version "1.7.10"
-}
-
-
-val probeGroup: String by project
-val jacksonVersion: String by project
-val vertxVersion: String by project
-val jupiterVersion: String by project
-val logbackVersion: String by project
-val sppVersion: String by project
-
-repositories {
-    mavenCentral()
-    maven(url = "https://jitpack.io")
-    maven(url = "https://pkg.sourceplus.plus/sourceplusplus/protocol")
-}
-
-dependencies {
-    implementation("io.vertx:vertx-tcp-eventbus-bridge:$vertxVersion")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
-    implementation("plus.sourceplus:protocol:$sppVersion") {
-        isTransitive = false
-    }
-
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
-
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:$jupiterVersion")
-    testImplementation("io.vertx:vertx-junit5:$vertxVersion")
-    testImplementation("io.vertx:vertx-web-client:$vertxVersion")
-    testImplementation("ch.qos.logback:logback-classic:$logbackVersion")
-    testImplementation("io.vertx:vertx-service-proxy:$vertxVersion")
-    testImplementation("io.vertx:vertx-service-discovery:$vertxVersion")
-    testImplementation("io.vertx:vertx-lang-kotlin-coroutines:$vertxVersion")
-}
-
-sourceSets.test {
-    java.srcDirs("test/java", "test/kotlin")
-    resources.srcDirs("test/resources")
 }
 
 tasks {
@@ -73,22 +34,6 @@ tasks {
         dependsOn("updateDockerFiles", "composeUp")
     }
     getByName("composeUp").mustRunAfter("updateDockerFiles")
-
-    getByName<Test>("test") {
-        failFast = true
-        useJUnitPlatform()
-//        if (System.getProperty("test.profile") != "integration") {
-//            exclude("integration/**")
-//        }
-
-        testLogging {
-            events("passed", "skipped", "failed")
-            setExceptionFormat("full")
-
-            outputs.upToDateWhen { false }
-            showStandardStreams = true
-        }
-    }
 }
 
 dockerCompose {
