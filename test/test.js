@@ -1,14 +1,16 @@
 const host = "http://localhost:12800";
-const SYSTEM_JWT_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJkZXZlbG9wZXJfaWQiOiJzeXN0ZW0iLCJjcmVhdGVkX2F0IjoxNjU4NzM3Njc5NTIxLCJleHBpcmVzX2F0IjoxNjkwMjczNjc5NTIxLCJpYXQiOjE2NTg3Mzc2Nzl9.C70FjmmhLoG38x5LWa9LuzTMs1YnP0DRMfZxVuzBa6OzEp-dEvGIS5Y_k7LiZSRqjgXyaUGpXnDXzOUPigrpwj7Fx_IYrgkOwuw5l-Wv4hasI-RYQjx5MZLa-dmw_ObY8_AOHF_XNuElPVSKpKMpN6THRT2IfelXKz6OINgZr4pQzqgFlc4KnVhB87Rm9Ya-KbxvzREicp5mmVGo2Ca4_nf7SyM5ZLP1vYw4FOt_Eejioub859q-CCL1ZqwvPb3Kwmzga3USLyAzlk_R4vYZWDyZmq0qiOTBO2V97GleXbl8b4Xiw3Uxwlc76svDefNNH0VLtWM-mOPhRNnUPiUbcQHxNTCTuHF6jEhvvVbKaq5welGkINF7HLX7zGxcYwylsz6UVNa3c-LX89wfQbKlGr9pERJSwCvNtTMHq7oj_xI99e4A1cw7DX8LjAnp9zrUZgpo7OVT_TEVFXKtNQtKlKn6Pg48y6sFE3Wf48An6A5cIzrgHjfyOq1NWbDrQMon4acD_jPwcFYn21Or2YULRBRQR7hQCGBvkoIo5t24e-5ELm9h5PTcDeDLndKsik8DjzhPuLIqU9_gM0WMrr5sC0nh5eR2GMKfedcKULUU5Ql3Y_3Q0_hUx-wQ8ZT2LJez6bZF6vSgr9E6d6QpL5tfIg4vbsDYj-yqdhzB4R7XvUQ"
 const assert = require('assert');
 const {default: axios} = require("axios");
+
+const tokenPromise = axios.get(`${host}/api/new-token?access_token=change-me`)
+    .then(response => response.data);
 
 describe('Stats', function () {
     let response;
     describe('/stats', function () {
-        before(function () {
+        before(async function () {
             return axios.get(`${host}/stats`, {
-                headers: {Authorization: 'Bearer ' + SYSTEM_JWT_TOKEN}
+                headers: {Authorization: 'Bearer ' + await tokenPromise}
             }).then(function (res) {
                 response = res;
             })
@@ -19,6 +21,7 @@ describe('Stats', function () {
         })
 
         it('probe is connected', function () {
+            console.log(response.data);
             assert.equal(
                 response.data.platform["connected-probes"],
                 1
@@ -37,9 +40,9 @@ describe('Stats', function () {
 describe('Clients', function () {
     let response;
     describe('/clients', function () {
-        before(function () {
+        before(async function () {
             return axios.get(`${host}/clients`, {
-                headers: {Authorization: 'Bearer ' + SYSTEM_JWT_TOKEN}
+                headers: {Authorization: 'Bearer ' + await tokenPromise}
             }).then(function (res) {
                 response = res;
             })
@@ -134,20 +137,20 @@ describe('NodeJS Probe', function () {
     let response;
 
     describe("connect test probe to platform", function () {
-        before(function () {
-            return SourcePlusPlus.start().then(function (spp) {
+        before(async function () {
+            return SourcePlusPlus.start().then(function () {
                 console.log("SourcePlusPlus started");
             }).catch(function (err) {
                 assert.fail(err);
             });
         });
-        after(function () {
+        after(async function () {
             return SourcePlusPlus.stop();
         });
 
-        it('add live breakpoint', function () {
-            addLiveBreakpoint({
-                "source": "test.js",
+        it('add live breakpoint', async function () {
+            await addLiveBreakpoint({
+                "source": "test/test.js",
                 "line": 10
             }, 20).then(function (res) {
                 assert.equal(res.status, 200);
@@ -161,7 +164,7 @@ describe('NodeJS Probe', function () {
             this.timeout(6000)
 
             setTimeout(function () {
-                assert.equal(SourcePlusPlus.liveInstrumentRemote.instrumentCache.size, 1);
+                assert.equal(SourcePlusPlus.liveInstrumentRemote.instruments.size, 1);
                 done();
             }, 5000);
         });
@@ -185,13 +188,13 @@ describe('NodeJS Probe', function () {
     });
 });
 
-function addLiveBreakpoint(location, hitLimit) {
+async function addLiveBreakpoint(location, hitLimit) {
     const options = {
         method: 'POST',
         url: `${host}/graphql/spp`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + SYSTEM_JWT_TOKEN
+            Authorization: 'Bearer ' + await tokenPromise
         },
         data: {
             "query": "mutation ($input: LiveBreakpointInput!) { addLiveBreakpoint(input: $input) { id location { source line } condition expiresAt hitLimit applyImmediately applied pending throttle { limit step } } }",
@@ -206,13 +209,13 @@ function addLiveBreakpoint(location, hitLimit) {
     return axios.request(options);
 }
 
-function removeLiveInstrument(id) {
+async function removeLiveInstrument(id) {
     const options = {
         method: 'POST',
         url: `${host}/graphql/spp`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + SYSTEM_JWT_TOKEN
+            Authorization: 'Bearer ' + await tokenPromise
         },
         data: {
             "query": "mutation ($id: String!) { removeLiveInstrument(id: $id) { id } }",
