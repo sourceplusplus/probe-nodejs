@@ -69,27 +69,13 @@ describe('Add Live Breakpoint', function () {
     let response;
     describe('/graphql', function () {
         before(function () {
-            const options = {
-                method: 'POST',
-                url: `${host}/graphql/spp`,
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: 'Bearer ' + SYSTEM_JWT_TOKEN
+            return addLiveBreakpoint(
+                {
+                    "source": "test.js",
+                    "line": 10
                 },
-                data: {
-                    "query": "mutation ($input: LiveBreakpointInput!) { addLiveBreakpoint(input: $input) { id location { source line } condition expiresAt hitLimit applyImmediately applied pending throttle { limit step } } }",
-                    "variables": {
-                        "input": {
-                            "location": {
-                                "source": "test.js",
-                                "line": 10
-                            },
-                            "hitLimit": 20
-                        }
-                    }
-                }
-            };
-            return axios.request(options).then(function (res) {
+                20
+            ).then(function (res) {
                 response = res;
             })
         });
@@ -117,3 +103,35 @@ describe('Add Live Breakpoint', function () {
         });
     });
 });
+
+describe('NodeJS Probe', function () {
+    xit("connect test probe to platform", function () {
+        const SourcePlusPlus = require("../src/SourcePlusPlus.ts");
+        SourcePlusPlus.start().then(function (spp) {
+            console.log("SourcePlusPlus started");
+        }).catch(function (err) {
+            console.log(err);
+        });
+    });
+});
+
+function addLiveBreakpoint(location, hitLimit) {
+    const options = {
+        method: 'POST',
+        url: `${host}/graphql/spp`,
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + SYSTEM_JWT_TOKEN
+        },
+        data: {
+            "query": "mutation ($input: LiveBreakpointInput!) { addLiveBreakpoint(input: $input) { id location { source line } condition expiresAt hitLimit applyImmediately applied pending throttle { limit step } } }",
+            "variables": {
+                "input": {
+                    "location": location,
+                    "hitLimit": hitLimit
+                }
+            }
+        }
+    };
+    return axios.request(options);
+}
