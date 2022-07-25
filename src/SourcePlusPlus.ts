@@ -31,6 +31,7 @@ namespace SourcePlusPlus {
     export let liveInstrumentRemote: LiveInstrumentRemote;
 
     let debug = false;
+    let eventBus: EventBus;
 
     export async function start(config?: SourcePlusPlusConfig, paramDebug = false): Promise<void> {
         debug = paramDebug;
@@ -41,29 +42,28 @@ namespace SourcePlusPlus {
             probeConfig = YAML.parse(fs.readFileSync(probeConfigFile, 'utf8'));
         }
 
-        probeConfig.spp = probeConfig.spp || {};
+        probeConfig.spp = probeConfig["spp-probe"] || {};
         probeConfig.skywalking = probeConfig.skywalking || {};
         probeConfig.skywalking.collector = probeConfig.skywalking.collector || {};
         probeConfig.skywalking.agent = probeConfig.skywalking.agent || {};
 
         probeConfig.spp.probe_id = getConfigValueString('SPP_PROBE_ID',
             probeConfig.spp.probe_id, randomUUID());
-        probeConfig.spp.platform_host = getConfigValueString('SPP_PLATFORM_HOST',
-            probeConfig.spp.platform_host, 'localhost');
-        probeConfig.spp.platform_port = getConfigValueNumber('SPP_PLATFORM_PORT',
-            probeConfig.spp.platform_port, 5450);
+        probeConfig.spp.host = getConfigValueString('SPP_PLATFORM_HOST',
+            probeConfig.spp.host, 'localhost');
+        probeConfig.spp.grpc_port = getConfigValueNumber('SPP_PLATFORM_GRPC_PORT',
+            probeConfig.spp.grpc_port, 11800);
+        probeConfig.spp.rest_port = getConfigValueNumber('SPP_PLATFORM_REST_PORT',
+            probeConfig.spp.rest_port, 12800);
         probeConfig.spp.verify_host = getConfigValueBoolean('SPP_TLS_VERIFY_HOST',
             probeConfig.spp.verify_host, true);
         probeConfig.spp.ssl_enabled = getConfigValueBoolean('SPP_HTTP_SSL_ENABLED',
             probeConfig.spp.ssl_enabled, true);
-        probeConfig.skywalking.agent.service_name = getConfigValueString('SKYWALKING_AGENT_SERVICE_NAME',
+        probeConfig.skywalking.agent.service_name = getConfigValueString('SW_AGENT_SERVICE_NAME',
             probeConfig.skywalking.agent.service_name, 'spp-probe');
 
-        let skywalkingHost = getConfigValueString('SPP_OAP_HOST', 'localhost', 'localhost');
-        let skywalkingPort = getConfigValueNumber('SPP_OAP_PORT', 11800, 11800);
-
-        probeConfig.skywalking.collector.backend_service = getConfigValueString("SPP_SKYWALKING_BACKEND_SERVICE",
-            probeConfig.skywalking.collector.backend_service, `${skywalkingHost}:${skywalkingPort}`);
+        probeConfig.skywalking.collector.backend_service = getConfigValueString("SW_COLLECTOR_BACKEND_SERVICE",
+            probeConfig.skywalking.collector.backend_service, `${probeConfig.spp.host}:${probeConfig.spp.grpc_port}`);
 
         // Copy given config
         Object.assign(probeConfig, config);
@@ -71,6 +71,11 @@ namespace SourcePlusPlus {
         debugLog("Loaded probe config:", probeConfig);
 
         return attach();
+    }
+
+    export async function stop(): Promise<void> {
+        await agent.flush();
+        eventBus.close();
     }
 
     async function attach(): Promise<void> {
@@ -90,21 +95,20 @@ namespace SourcePlusPlus {
             caData = `-----BEGIN CERTIFICATE-----\\n${probeConfig.spp.probe_certificate}\\n-----END CERTIFICATE-----`;
         }
 
-        let url = `${probeConfig.spp.platform_host}:12800`; //todo: configurable port
+        let url = `${probeConfig.spp.host}:${probeConfig.spp.rest_port}`;
         url = probeConfig.spp.ssl_enabled ? `https://${url}` : `http://${url}`;
 
         debugLog("Connecting to SourcePlusPlus with url:", url);
 
-
         // TODO: SSL context
-        let eventBus = new EventBus(url + "/probe/eventbus", {
+        eventBus = new EventBus(url + "/probe/eventbus", {
             server: ""
         });
         eventBus.enableReconnect(true);
 
         return new Promise<void>((resolve, reject) => {
             eventBus.onopen = () => {
-                debugLog("Connected to SourcePlusPlus");
+                debugLog("Connected to Source++ Platform");
 
                 let promises = [];
                 promises.push(sendConnected(eventBus));
@@ -129,24 +133,23 @@ namespace SourcePlusPlus {
             Object.assign(probeMetadata, probeConfig.spp.probe_metadata);
         }
 
-        let replyAddress = randomUUID();
         return new Promise<void>((resolve, reject) => {
             eventBus.send("spp.platform.status.probe-connected", {
                 instanceId: probeConfig.spp.probe_id,
                 connectionTime: Date.now(),
                 meta: probeMetadata
-            }, undefined, (err, reply) => {
+            }, undefined, (err) => {
                 if (err) {
                     reject(err);
                 } else {
-                    registerRemotes(eventBus, replyAddress, reply.body);
+                    registerRemotes(eventBus);
                     resolve();
                 }
             });
         });
     }
 
-    function registerRemotes(eventBus: EventBus, replyAddress: string, status) {
+    function registerRemotes(eventBus: EventBus) {
         eventBus.registerHandler("spp.probe.command.live-instrument-remote", {}, (err, message) => {
             liveInstrumentRemote.handleInstrumentCommand(
                 LiveInstrumentCommand.fromJson(message.body));

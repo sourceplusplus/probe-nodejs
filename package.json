@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "test": "mocha test/*.js",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
@@ -22,11 +23,13 @@
     "yaml": "^2.1.1"
   },
   "devDependencies": {
+    "mocha": "^10.0.0",
     "typescript": "^4.7.4"
   },
   "dependencies": {
     "@types/node": "^18.0.6",
     "@vertx/eventbus-bridge-client.js": "^1.0.0-3-SNAPSHOT",
+    "axios": "^0.27.2",
     "skywalking-backend-js": "^0.5.1",
     "vlq": "^2.0.4",
     "yaml": "^2.1.1"

@@ -5,8 +5,9 @@ export default interface SourcePlusPlusConfig {
 
 interface ConfigSPP {
     probe_id?: string
-    platform_host?: string
-    platform_port?: number
+    host?: string
+    grpc_port?: number
+    rest_port?: number
     verify_host?: boolean
     ssl_enabled?: boolean
     probe_certificate?: string
