@@ -22,13 +22,20 @@ namespace VariableUtil {
         return variables;
     }
 
+    export function encodeVariables(variables: Runtime.PropertyDescriptor[]) {
+        return variables.reduce((acc, v) => {
+            acc[v.name] = encodeVariable(v);
+            return acc;
+        }, {});
+    }
+
     export function encodeVariable(variable: Runtime.PropertyDescriptor) {
         if (!variable.value) {
-            return JSON.stringify({
+            return {
                 '@class': "null",
                 '@id': 'null',
                 '@skip': 'Error: No variable value'
-            });
+            };
         }
         let clazz, id, value;
         if (variable.value.type === 'object') {
@@ -51,17 +58,20 @@ namespace VariableUtil {
         };
         obj[variable.name] = "";
         if (variable.value.value) {
-            if (variable.value.type !== 'object') { // TODO: Handle arrays
-                obj[variable.name] = value;
+            // Arrays are also objects, so no special handling is necessary
+            if (variable.value.type === 'object') {
+                obj[variable.name] = {};
+                variable.value.value.forEach(v => {
+                    obj[variable.name][v.name] = encodeVariable(v);
+                })
+            } else if (variable.value.type === 'function') {
+                // TODO: Function/class handling
             } else {
-                obj[variable.name] = variable.value.value.reduce((acc, v) => {
-                    acc[v.name] = encodeVariable(v);
-                    return acc;
-                }, {});
+                obj[variable.name] = value;
             }
         }
 
-        return JSON.stringify(obj);
+        return obj;
     }
 }
 
