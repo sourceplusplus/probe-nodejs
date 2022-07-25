@@ -84,7 +84,8 @@ export default class LiveInstrumentRemote {
                 promises.push(this.getVariable(scope.object.objectId, 2)
                     .then(res => {
                         if (scope.type === 'local' || scope.type === 'block') {
-                            variables['local'] = res
+                            variables['local'] = variables['local'] || [];
+                            variables['local'].push(...res);
                         } else if (scope.type === 'closure') {
                             variables['field'] = res[0].value.value; // TODO: Ensure result[0] is always the class instance
                         } else if (scope.type === 'global') {

@@ -31,11 +31,11 @@ namespace VariableUtil {
 
     export function encodeVariable(variable: Runtime.PropertyDescriptor) {
         if (!variable.value) {
-            return JSON.stringify({
+            return {
                 '@class': "null",
                 '@id': 'null',
                 '@skip': 'Error: No variable value'
-            });
+            };
         }
         let clazz, id, value;
         if (variable.value.type === 'object') {
@@ -62,7 +62,7 @@ namespace VariableUtil {
             if (variable.value.type === 'object') {
                 obj[variable.name] = {};
                 variable.value.value.forEach(v => {
-                    obj[variable.name] = encodeVariable(v);
+                    obj[variable.name][v.name] = encodeVariable(v);
                 })
             } else if (variable.value.type === 'function') {
                 // TODO: Function/class handling
@@ -71,7 +71,7 @@ namespace VariableUtil {
             }
         }
 
-        return JSON.stringify(obj);
+        return obj;
     }
 }
 
