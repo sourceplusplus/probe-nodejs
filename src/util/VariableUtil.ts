@@ -23,7 +23,10 @@ namespace VariableUtil {
     }
 
     export function encodeVariables(variables: Runtime.PropertyDescriptor[]) {
-        return variables.map(encodeVariable);
+        return variables.reduce((acc, v) => {
+            acc[v.name] = encodeVariable(v);
+            return acc;
+        }, {});
     }
 
     export function encodeVariable(variable: Runtime.PropertyDescriptor) {
@@ -56,13 +59,15 @@ namespace VariableUtil {
         obj[variable.name] = "";
         if (variable.value.value) {
             // Arrays are also objects, so no special handling is necessary
-            if (variable.value.type !== 'object') {
-                obj[variable.name] = value;
+            if (variable.value.type === 'object') {
+                obj[variable.name] = {};
+                variable.value.value.forEach(v => {
+                    obj[variable.name] = encodeVariable(v);
+                })
+            } else if (variable.value.type === 'function') {
+                // TODO: Function/class handling
             } else {
-                obj[variable.name] = variable.value.value.reduce((acc, v) => {
-                    acc[v.name] = encodeVariable(v);
-                    return acc;
-                }, {});
+                obj[variable.name] = value;
             }
         }
 
