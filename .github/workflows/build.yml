@@ -70,7 +70,8 @@ jobs:
         run: |
           resp=$(curl --header "Authorization: Bearer ${{ env.SPP_JWT_TOKEN }}" --insecure https://localhost:12800/clients) && [[ $(echo $resp | jq -r ."probes"[0]."meta"."language") == "nodejs" ]] && echo $resp || (echo $resp && exit 1)
 
-      #      - run: ./gradlew test -Dtest.profile=integration
+      - name: Run tests
+        run: npm run test
 
       - run: ./gradlew composeLogs
         if: ${{ always() }}
