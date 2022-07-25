@@ -5,6 +5,7 @@ SourcePlusPlus.start({}, true).then(() => {
     console.log("test");
 
     SourcePlusPlus.liveInstrumentRemote.test();
-
-    let i = 2;
+    setTimeout(() => {
+        let i = 2;
+    }, 1000);
 });

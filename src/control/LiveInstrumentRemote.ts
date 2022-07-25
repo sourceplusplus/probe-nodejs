@@ -11,6 +11,7 @@ import CommandType from "../model/command/CommandType";
 import LiveBreakpoint from "../model/instruments/LiveBreakpoint";
 import {randomUUID} from "crypto";
 import VariableUtil from "../util/VariableUtil";
+import SourcePlusPlus from "../SourcePlusPlus";
 
 export interface VariableInfo {
     block: Runtime.PropertyDescriptor[]
@@ -94,47 +95,73 @@ export default class LiveInstrumentRemote {
                     }));
             }
 
+            let instrumentIds = this.breakpointIdToInstrumentIds.get(message.params.hitBreakpoints[0]); // TODO: Handle multiple hit breakpoints
+            if (!instrumentIds) {
+                this.removeBreakpoint(message.params.hitBreakpoints[0]);
+                return;
+            }
+
+            let instruments = instrumentIds.map(id => this.instruments.get(id));
+            let conditionsSatisfied = Promise.all(instruments.map(instrument => {
+                if (instrument.condition === undefined)
+                    return true;
+
+                return new Promise<boolean>((resolve, reject) => {
+                    this.session.post("Debugger.evaluateOnCallFrame", {
+                        callFrameId: frame.callFrameId,
+                        expression: instrument.condition
+                    }, (err, res) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            if (res.result.type !== 'boolean') {
+                                reject("Invalid condition for instrument id: " + instrument.id + ": " + instrument.condition);
+                            } else {
+                                resolve(res.result.value);
+                            }
+                        }
+                    });
+                });
+            }));
+
             Promise.all(promises).then(() => {
-                // Do stuff
-                let instrumentIds = this.breakpointIdToInstrumentIds.get(message.params.hitBreakpoints[0]); // TODO: Handle multiple hit breakpoints
-                if (!instrumentIds) {
-                    this.removeBreakpoint(message.params.hitBreakpoints[0]);
-                    return;
-                }
+                conditionsSatisfied.then(conditions => {
+                    for (let i = 0; i < instruments.length; i++) {
+                        if (conditions[i]) {
+                            let instrument = instruments[i];
+                            if (!instrument) {
+                                continue;
+                            }
 
-                for (let instrumentId of instrumentIds) {
-                    let instrument = this.instruments.get(instrumentId);
-                    if (!instrument) {
-                        continue;
+                            if (instrument.type == LiveInstrumentType.BREAKPOINT) {
+                                ContextReceiver.applyBreakpoint(
+                                    instrument.id,
+                                    instrument.location.source,
+                                    instrument.location.line,
+                                    frame,
+                                    variables
+                                );
+                            } else if (instrument.type == LiveInstrumentType.LOG) {
+                                let logInstrument = <LiveLog>instrument;
+                                ContextReceiver.applyLog(
+                                    instrument.id,
+                                    logInstrument.logFormat,
+                                    logInstrument.logArguments,
+                                    variables
+                                );
+                            } else if (instrument.type == LiveInstrumentType.METER) {
+                                let meterInstrument = <LiveMeter>instrument;
+                                ContextReceiver.applyMeter(
+                                    instrument.id,
+                                    variables
+                                );
+                            }
+                            if (instrument.isFinished()) {
+                                this.removeBreakpoint(instrument.id);
+                            }
+                        }
                     }
-
-                    if (instrument.type == LiveInstrumentType.BREAKPOINT) {
-                        ContextReceiver.applyBreakpoint(
-                            instrumentId,
-                            instrument.location.source,
-                            instrument.location.line,
-                            frame,
-                            variables
-                        );
-                    } else if (instrument.type == LiveInstrumentType.LOG) {
-                        let logInstrument = <LiveLog>instrument;
-                        ContextReceiver.applyLog(
-                            instrumentId,
-                            logInstrument.logFormat,
-                            logInstrument.logArguments,
-                            variables
-                        );
-                    } else if (instrument.type == LiveInstrumentType.METER) {
-                        let meterInstrument = <LiveMeter>instrument;
-                        ContextReceiver.applyMeter(
-                            instrumentId,
-                            variables
-                        );
-                    }
-                    if (instrument.isFinished()) {
-                        this.removeBreakpoint(instrumentId);
-                    }
-                }
+                });
             });
 
             // let frameId = message.params.callFrames[0].callFrameId;
@@ -315,6 +342,7 @@ export default class LiveInstrumentRemote {
     test() {
         let instrument = new LiveBreakpoint();
         instrument.id = randomUUID();
+        instrument.condition = "false";
         instrument.location = {source: "test/javascript/test.js", line: 8};
         instrument.hitLimit = 1;
         instrument.applyImmediately = true;

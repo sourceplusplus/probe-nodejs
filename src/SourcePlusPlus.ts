@@ -157,7 +157,7 @@ namespace SourcePlusPlus {
         });
     }
 
-    function debugLog(...args: any[]) {
+    export function debugLog(...args: any[]) {
         if (debug) {
             console.log(...args);
         }
