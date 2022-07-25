@@ -27,8 +27,8 @@ namespace SourcePlusPlus {
     let getConfigValueNumber = (env, def, trueDef) =>
         getConfigValue<number>(env, def, trueDef, (str) => Number(str));
 
-    let probeConfig: SourcePlusPlusConfig;
-    let liveInstrumentRemote: LiveInstrumentRemote;
+    export let probeConfig: SourcePlusPlusConfig;
+    export let liveInstrumentRemote: LiveInstrumentRemote;
 
     let debug = false;
 

@@ -8,6 +8,9 @@ import LiveMeter from "../model/instruments/LiveMeter";
 import EventBus from "@vertx/eventbus-bridge-client.js";
 import LiveInstrumentCommand from "../model/command/LiveInstrumentCommand";
 import CommandType from "../model/command/CommandType";
+import LiveBreakpoint from "../model/instruments/LiveBreakpoint";
+import {randomUUID} from "crypto";
+import VariableUtil from "../util/VariableUtil";
 
 export interface VariableInfo {
     block: Runtime.PropertyDescriptor[]
@@ -72,22 +75,23 @@ export default class LiveInstrumentRemote {
             let variables = {}
             let promises = [];
 
-            // Attempt to get variables from the
+            // Attempt to get variables from the top call frame
             for (let scope of frame.scopeChain) {
-                promises.push(this.getVariable(scope.object.objectId, 2)
-                    .then(res => variables[scope.type] = res.result));
-            }
-
-            this.session.post('Debugger.evaluateOnCallFrame', {
-                callFrameId: frame.callFrameId,
-                expression: "Object.keys(this).reduce((acc, current, _) => {acc[current] = this[current]; return acc}, {})",
-            }, (err, res) => {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log(res.result);
+                if (scope.type === 'global') {
+                    continue; // TODO: Ignore this until we have a better way of filtering out the hundreds of js properties
                 }
-            })
+
+                promises.push(this.getVariable(scope.object.objectId, 2)
+                    .then(res => {
+                        if (scope.type === 'local' || scope.type === 'block') {
+                            variables['local'] = res
+                        } else if (scope.type === 'closure') {
+                            variables['field'] = res[0].value.value; // TODO: Ensure result[0] is always the class instance
+                        } else if (scope.type === 'global') {
+                            // Handle this once we have a better way of filtering out the hundreds of js properties
+                        }
+                    }));
+            }
 
             Promise.all(promises).then(() => {
                 // Do stuff
@@ -126,6 +130,9 @@ export default class LiveInstrumentRemote {
                             variables
                         );
                     }
+                    if (instrument.isFinished()) {
+                        this.removeBreakpoint(instrumentId);
+                    }
                 }
             });
 
@@ -152,7 +159,7 @@ export default class LiveInstrumentRemote {
         });
     }
 
-    private getVariable(objectId: string, remainingDepth: number): Promise<any> {
+    private getVariable(objectId: string, remainingDepth: number): Promise<Runtime.PropertyDescriptor[]> {
         return new Promise<any>((resolve, reject) => {
             this.session.post("Runtime.getProperties", {
                 objectId: objectId,
@@ -161,8 +168,23 @@ export default class LiveInstrumentRemote {
                 if (err) {
                     reject(err);
                 } else {
-                    console.log(res.result);
-                    resolve(res.result);
+                    let result: Runtime.PropertyDescriptor[] = res.result;
+
+                    VariableUtil.processVariables(result)
+
+                    if (remainingDepth <= 0)
+                        return resolve(result);
+
+                    let newRemainingDepth = remainingDepth - 1;
+
+                    let promises = [];
+                    for (let variable of result) {
+                        promises.push(this.getVariable(variable.value.objectId, newRemainingDepth)
+                            .then(res => variable.value.value = res));
+                    }
+                    Promise.all(promises).then(() => {
+                        resolve(result)
+                    });
                 }
             });
         });
@@ -286,5 +308,17 @@ export default class LiveInstrumentRemote {
                 this.instrumentCache.delete(key);
             }
         });
+    }
+
+    test() {
+        let instrument = new LiveBreakpoint();
+        instrument.id = randomUUID();
+        instrument.location = {source: "test/javascript/test.js", line: 5};
+        instrument.hitLimit = 1;
+        instrument.applyImmediately = true;
+        instrument.applied = false;
+        instrument.pending = false;
+        instrument.meta = {};
+        this.addInstrument(instrument);
     }
 }
