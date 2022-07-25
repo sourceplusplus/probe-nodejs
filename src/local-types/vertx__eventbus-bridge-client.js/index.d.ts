@@ -19,6 +19,7 @@ declare module '@vertx/eventbus-bridge-client.js' {
         registerHandler(address: string, headers: any, callback: (err: any | undefined, body: any | undefined) => void): void;
         unregisterHandler(address: string, headers: any, callback: (err: any | undefined, body: any | undefined) => void): void;
         enableReconnect(enable: boolean)
+        close()
     }
 
     export = EventBus;

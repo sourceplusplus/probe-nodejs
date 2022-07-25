@@ -31,6 +31,7 @@ namespace SourcePlusPlus {
     export let liveInstrumentRemote: LiveInstrumentRemote;
 
     let debug = false;
+    let eventBus: EventBus;
 
     export async function start(config?: SourcePlusPlusConfig, paramDebug = false): Promise<void> {
         debug = paramDebug;
@@ -72,6 +73,11 @@ namespace SourcePlusPlus {
         return attach();
     }
 
+    export async function stop(): Promise<void> {
+        agent.flush();
+        eventBus.close();
+    }
+
     async function attach(): Promise<void> {
         config.collectorAddress = probeConfig.skywalking.collector.backend_service;
         config.serviceName = probeConfig.skywalking.agent.service_name;
@@ -95,7 +101,7 @@ namespace SourcePlusPlus {
         debugLog("Connecting to SourcePlusPlus with url:", url);
 
         // TODO: SSL context
-        let eventBus = new EventBus(url + "/probe/eventbus", {
+        eventBus = new EventBus(url + "/probe/eventbus", {
             server: ""
         });
         eventBus.enableReconnect(true);

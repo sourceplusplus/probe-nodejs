@@ -141,6 +141,9 @@ describe('NodeJS Probe', function () {
                 assert.fail(err);
             });
         });
+        after(function () {
+            return SourcePlusPlus.stop();
+        });
 
         it('add live breakpoint', function () {
             addLiveBreakpoint({
@@ -154,10 +157,13 @@ describe('NodeJS Probe', function () {
             });
         });
 
-        it('verify probe is aware of breakpoint', async function () {
+        it('verify probe is aware of breakpoint', function (done) {
             this.timeout(6000)
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            assert.equal(SourcePlusPlus.liveInstrumentRemote.instrumentCache.size, 1);
+
+            setTimeout(function () {
+                assert.equal(SourcePlusPlus.liveInstrumentRemote.instrumentCache.size, 1);
+                done();
+            }, 5000);
         });
 
         it('remove breakpoint', function () {
