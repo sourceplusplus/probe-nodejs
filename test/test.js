@@ -24,6 +24,13 @@ describe('Stats', function () {
                 1
             )
         });
+
+        it('live-instrument-remote remote registered', function () {
+            assert.equal(
+                response.data.platform.services.probe["spp.probe.command.live-instrument-remote"],
+                1
+            )
+        });
     });
 });
 
@@ -46,6 +53,13 @@ describe('Clients', function () {
             assert.equal(
                 response.data.probes[0].meta.language,
                 "nodejs"
+            )
+        });
+
+        it('live-instrument-remote remote registered', function () {
+            assert.equal(
+                response.data.probes[0].meta.remotes[0],
+                "spp.probe.command.live-instrument-remote"
             )
         });
     });
