@@ -74,9 +74,8 @@ namespace SourcePlusPlus {
     }
 
     export async function stop(): Promise<void> {
-        agent.flush();
+        await agent.flush();
         eventBus.close();
-        return Promise.resolve();
     }
 
     async function attach(): Promise<void> {
