@@ -138,6 +138,8 @@ describe('NodeJS Probe', function () {
 
     describe("connect test probe to platform", function () {
         before(async function () {
+            const liveInstrumentTest = require("./LiveInstrumentTest.js");
+
             return SourcePlusPlus.start().then(function () {
                 console.log("SourcePlusPlus started");
             }).catch(function (err) {
@@ -150,9 +152,9 @@ describe('NodeJS Probe', function () {
 
         it('add live breakpoint', async function () {
             await addLiveBreakpoint({
-                "source": "test/test.js",
-                "line": 10
-            }, 20).then(function (res) {
+                "source": "test/LiveInstrumentTest.js",
+                "line": 6
+            }, 10).then(function (res) {
                 assert.equal(res.status, 200);
                 instrumentId = res.data.data.addLiveBreakpoint.id;
             }).catch(function (err) {
