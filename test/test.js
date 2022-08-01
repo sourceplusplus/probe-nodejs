@@ -2,6 +2,7 @@ const host = "http://localhost:12800";
 const assert = require('assert');
 const {default: axios} = require("axios");
 const SourcePlusPlus = require("../dist/SourcePlusPlus");
+const EventBus = require("@vertx/eventbus-bridge-client.js");
 
 const tokenPromise = axios.get(`${host}/api/new-token?access_token=change-me`)
     .then(response => response.data);
@@ -164,6 +165,58 @@ describe('NodeJS Probe', function () {
         })
     });
 });
+
+describe('Listen for add breakpoint', function () {
+    it("setup add breakpoint listener", function (done) {
+        this.timeout(6000)
+
+        listenForBreakpointAdded(function () {
+            console.log("Breakpoint added listener ready")
+            addLiveBreakpoint({
+                "source": "test/LiveInstrumentTest.js",
+                "line": 8
+            })
+        }, function (data) {
+            console.log("Got breakpoint added")
+            assert.equal(data.location.source, "test/LiveInstrumentTest.js");
+            assert.equal(data.location.line, 8);
+            done();
+        });
+    });
+});
+
+async function listenForBreakpointAdded(ready, done) {
+    let eventBus = new EventBus(host + "/marker/eventbus");
+    eventBus.enableReconnect(true);
+    eventBus.onopen = async function () {
+        //send marker connected
+        eventBus.send("spp.platform.status.marker-connected", {
+            instanceId: "test-marker-id",
+            connectionTime: Date.now(),
+            meta: {}
+        }, {
+            "auth-token": await tokenPromise
+        }, async (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                //listen for breakpoint added event
+                eventBus.registerHandler("spp.service.live-instrument.subscriber:system", {
+                    "auth-token": await tokenPromise
+                }, function (err, message) {
+                    if (!err) {
+                        if (message.body.eventType === "BREAKPOINT_ADDED") {
+                            done(JSON.parse(message.body.data))
+                        } else {
+                            console.log(message)
+                        }
+                    }
+                });
+                ready()
+            }
+        });
+    }
+}
 
 async function addLiveBreakpoint(location, hitLimit) {
     const options = {
