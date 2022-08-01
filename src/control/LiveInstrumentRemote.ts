@@ -103,7 +103,7 @@ export default class LiveInstrumentRemote {
 
             let instruments = instrumentIds.map(id => this.instruments.get(id));
             let conditionsSatisfied = Promise.all(instruments.map(instrument => {
-                if (instrument.condition === undefined)
+                if (instrument.condition === undefined || instrument.condition === null)
                     return true;
 
                 return new Promise<boolean>((resolve, reject) => {
@@ -247,6 +247,10 @@ export default class LiveInstrumentRemote {
     }
 
     addInstrument(instrument: LiveInstrument) {
+        if (this.instruments.get(instrument.id) || this.instrumentCache.get(instrument.id)) {
+            return; // Instrument already exists or is in the cache
+        }
+
         let location = this.sourceMapper.mapLocation(instrument.location);
 
         if (!location) {

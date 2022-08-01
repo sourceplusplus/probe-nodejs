@@ -1,12 +1,18 @@
 // Keep running this method, so we can test breakpoints, logs, etc.
-(function test() {
-    let i = 0;
+let intervalId;
 
+function test() {
+    let i = 0;
+    
     for (let j = 0; j < 10; j++) {
         if (j % 2 === 0) {
             i++;
         }
     }
+}
 
-    setTimeout(test, 1000);
-})();
+intervalId = setInterval(test, 1000);
+
+module.exports = {
+    stop: () => clearInterval(intervalId)
+}
