@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 plugins {
     id("com.avast.gradle.docker-compose") version "0.16.8"
 }
@@ -14,13 +16,13 @@ tasks {
 
     register<Exec>("makeDist") {
         dependsOn("cleanPackDir")
-        executable = "npm"
+        executable = getNpm()
         args("run", "build")
     }
 
     register<Exec>("buildDist") {
         dependsOn("makeDist")
-        executable = "npm"
+        executable = getNpm()
         args("pack", "--pack-destination=./pack")
     }
 
@@ -40,4 +42,13 @@ dockerCompose {
     dockerComposeWorkingDirectory.set(File("./e2e"))
     removeVolumes.set(true)
     waitForTcpPorts.set(false)
+}
+
+// Make npm work on windows
+fun getNpm(): String {
+    return if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        "npm.cmd"
+    } else {
+        "npm"
+    }
 }
