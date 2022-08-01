@@ -16,16 +16,22 @@ export default class SourceMapper {
 
     map(scriptId: string, fileUrl: string, sourcemapFile?: string) {
         let basePath = process.cwd();
-        let filePath = url.parse(fileUrl).path;
+        let filePath = decodeURIComponent(url.parse(fileUrl).path);
         if (!filePath) {
             return; // TODO: Make sure this really only excludes unwanted files, since some scripts in node_modules
             // may be useful to debugging
+        }
+        if (process.platform === 'win32') { // TODO: Is there a better way to handle the leading slash?
+            if (filePath.match(/^\/[A-Za-z]:/)) { // Match drive letters
+                filePath = filePath.substr(1); // Remove leading slash
+            }
         }
         let dirPath = path.parse(filePath).dir;
 
         // No sourcemap was provided, so we assume the file was not transpiled
         if (!sourcemapFile || !fs.existsSync(`${dirPath}/${sourcemapFile}`)) {
             let relative = path.relative(basePath, filePath);
+            relative = relative.replace(/\\/g, '/'); // Normalize slashes
             this.mapped.set(relative, new MappedFile(scriptId));
             this.scriptLoaded(relative, scriptId);
             return;
