@@ -10,6 +10,8 @@ const tokenPromise = axios.get(`${host}/api/new-token?access_token=change-me`)
 let oldStatsResponse;
 let oldClientsResponse;
 
+let markerEventBus;
+
 // Gather data before adding the probe
 before(async function () {
     this.timeout(15000);
@@ -40,6 +42,38 @@ before(async function () {
         assert.fail(err);
     });
 
+    markerEventBus = new EventBus(host + "/marker/eventbus");
+    markerEventBus.enableReconnect(true);
+    await new Promise((resolve, reject) => {
+        markerEventBus.onopen = async function () {
+            //send marker connected
+            markerEventBus.send("spp.platform.status.marker-connected", {
+                instanceId: "test-marker-id",
+                connectionTime: Date.now(),
+                meta: {}
+            }, {
+                "auth-token": await tokenPromise
+            }, async (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    //listen for breakpoint added event
+                    markerEventBus.registerHandler("spp.service.live-instrument.subscriber:system", {
+                        "auth-token": await tokenPromise
+                    }, function (err, message) {
+                        if (!err) {
+                            console.log(message);
+                            if (markerListeners[message.body.eventType]) {
+                                markerListeners[message.body.eventType].forEach(listener => listener(JSON.parse(message.body.data)));
+                            }
+                        }
+                    });
+                    resolve();
+                }
+            });
+        }
+    });
+
     // Without waiting long enough, the spp.probe.command.live-instrument-remote counter isn't incremented
     await new Promise(resolve => setTimeout(resolve, 10000));
 });
@@ -47,6 +81,7 @@ before(async function () {
 // Stop the probe once we're done testing
 after(async function () {
     await SourcePlusPlus.stop();
+    markerEventBus.close();
 });
 
 describe('Stats', function () {
@@ -147,6 +182,14 @@ describe('NodeJS Probe', function () {
             }, 5000);
         });
 
+        it('verify breakpoint is hit', async function () {
+            this.timeout(2000)
+
+            let event = await awaitMarkerEvent("BREAKPOINT_HIT");
+
+            console.log(event);
+        });
+
         it('remove breakpoint', function () {
             return removeLiveInstrument(instrumentId).then(function (res) {
                 response = res;
@@ -166,56 +209,13 @@ describe('NodeJS Probe', function () {
     });
 });
 
-describe('Listen for add breakpoint', function () {
-    it("setup add breakpoint listener", function (done) {
-        this.timeout(6000)
+let markerListeners = {}
 
-        listenForBreakpointAdded(function () {
-            console.log("Breakpoint added listener ready")
-            addLiveBreakpoint({
-                "source": "test/LiveInstrumentTest.js",
-                "line": 8
-            })
-        }, function (data) {
-            console.log("Got breakpoint added")
-            assert.equal(data.location.source, "test/LiveInstrumentTest.js");
-            assert.equal(data.location.line, 8);
-            done();
-        });
-    });
-});
-
-async function listenForBreakpointAdded(ready, done) {
-    let eventBus = new EventBus(host + "/marker/eventbus");
-    eventBus.enableReconnect(true);
-    eventBus.onopen = async function () {
-        //send marker connected
-        eventBus.send("spp.platform.status.marker-connected", {
-            instanceId: "test-marker-id",
-            connectionTime: Date.now(),
-            meta: {}
-        }, {
-            "auth-token": await tokenPromise
-        }, async (err) => {
-            if (err) {
-                reject(err);
-            } else {
-                //listen for breakpoint added event
-                eventBus.registerHandler("spp.service.live-instrument.subscriber:system", {
-                    "auth-token": await tokenPromise
-                }, function (err, message) {
-                    if (!err) {
-                        if (message.body.eventType === "BREAKPOINT_ADDED") {
-                            done(JSON.parse(message.body.data))
-                        } else {
-                            console.log(message)
-                        }
-                    }
-                });
-                ready()
-            }
-        });
+async function awaitMarkerEvent(eventName) {
+    if (!markerListeners[eventName]) {
+        markerListeners[eventName] = [];
     }
+    return new Promise(resolve => markerListeners[eventName].push(data => resolve(data)));
 }
 
 async function addLiveBreakpoint(location, hitLimit) {

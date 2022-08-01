@@ -5,7 +5,8 @@ import {ContextManager} from "skywalking-backend-js";
 import config from "skywalking-backend-js/lib/config/AgentConfig";
 import * as grpc from '@grpc/grpc-js';
 import {LogReportServiceClient} from "skywalking-backend-js/lib/proto/logging/Logging_grpc_pb";
-import {Debugger, Runtime} from "inspector";
+import {Debugger} from "inspector";
+import VariableUtil from "../util/VariableUtil";
 
 namespace ContextReceiver {
     let logReport = new LogReportServiceClient(
@@ -25,7 +26,7 @@ namespace ContextReceiver {
     }
 
     function callFrameToString(frame: Debugger.CallFrame) {
-        return `${frame.url} - ${frame.functionName}(${frame.location.lineNumber})`;
+        return `${frame.functionName} - ${frame.url}:${frame.location.lineNumber}`;
     }
 
     export function applyMeter(liveMeterId: string, variables) {
@@ -33,16 +34,42 @@ namespace ContextReceiver {
     }
 
     export function applyBreakpoint(breakpointId: string, source: string | undefined, line: number,
-                                    frame: Debugger.CallFrame, variables) {
-        let activeSpan = ContextManager.current.newLocalSpan(callFrameToString(frame));
+                                    frames: Debugger.CallFrame[], variables) {
+        let activeSpan = ContextManager.current.newLocalSpan(callFrameToString(frames[0]));
 
-        let localVars = variables['block'];
+        let localVars = variables['local'];
+        let fieldVars = variables['field'];
 
-        let localFields = variables['local'];
+        for (let varName in localVars) {
+            let value = localVars[varName];
+            activeSpan.tag({
+                key: `spp.local-variable:${breakpointId}:${varName}`,
+                overridable: false,
+                val: JSON.stringify(VariableUtil.encodeVariable(value))
+            });
+        }
+        for (let varName in fieldVars) {
+            let value = fieldVars[varName];
+            activeSpan.tag({
+                key: `spp.field:${breakpointId}:${varName}`,
+                overridable: false,
+                val: JSON.stringify(VariableUtil.encodeVariable(value))
+            });
+        }
 
+        activeSpan.tag({
+            key: `spp.stack-trace:${breakpointId}`,
+            overridable: false,
+            val: frames.map(callFrameToString).join('\n')
+        })
 
+        activeSpan.tag({
+            key: `spp.breakpoint:${breakpointId}`,
+            overridable: false,
+            val: JSON.stringify({source, line})
+        })
 
-        activeSpan.stop();
+        ContextManager.current.stop(activeSpan)
     }
 
     export function applyLog(liveLogId: string, logFormat: string, logArguments: string[], variables) {

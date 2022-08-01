@@ -14,6 +14,7 @@
   "scripts": {
     "build": "tsc",
     "test": "mocha test/*.js",
+    "build-test": "npm run build && npm run test",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
