@@ -1,19 +1,60 @@
 const host = "http://localhost:12800";
 const assert = require('assert');
 const {default: axios} = require("axios");
+const SourcePlusPlus = require("../dist/SourcePlusPlus");
 
 const tokenPromise = axios.get(`${host}/api/new-token?access_token=change-me`)
     .then(response => response.data);
+
+let oldStatsResponse;
+let oldClientsResponse;
+
+// Gather data before adding the probe
+before(async function () {
+    this.timeout(15000);
+
+    oldStatsResponse = await axios.get(`${host}/stats`, {
+        headers: {
+            Authorization: 'Bearer ' + await tokenPromise
+        }
+    });
+
+    if (oldStatsResponse.status !== 200) {
+        throw new Error("Failed to get original stats");
+    }
+
+    oldClientsResponse = await axios.get(`${host}/clients`, {
+        headers: {
+            Authorization: 'Bearer ' + await tokenPromise
+        }
+    });
+
+    if (oldClientsResponse.status !== 200) {
+        throw new Error("Failed to get original clients");
+    }
+
+    await SourcePlusPlus.start().then(function () {
+        console.log("SourcePlusPlus started");
+    }).catch(function (err) {
+        assert.fail(err);
+    });
+
+    // Without waiting long enough, the spp.probe.command.live-instrument-remote counter isn't incremented
+    await new Promise(resolve => setTimeout(resolve, 10000));
+});
+
+// Stop the probe once we're done testing
+after(async function () {
+    await SourcePlusPlus.stop();
+});
 
 describe('Stats', function () {
     let response;
     describe('/stats', function () {
         before(async function () {
-            return axios.get(`${host}/stats`, {
+            response = await axios.get(`${host}/stats`, {
                 headers: {Authorization: 'Bearer ' + await tokenPromise}
-            }).then(function (res) {
-                response = res;
-            })
+            });
         });
 
         it('200 status code', function () {
@@ -21,17 +62,16 @@ describe('Stats', function () {
         })
 
         it('probe is connected', function () {
-            console.log(response.data);
             assert.equal(
                 response.data.platform["connected-probes"],
-                1
+                oldStatsResponse.data.platform["connected-probes"] + 1
             )
         });
 
         it('live-instrument-remote remote registered', function () {
             assert.equal(
                 response.data.platform.services.probe["spp.probe.command.live-instrument-remote"],
-                1
+                oldStatsResponse.data.platform.services.probe["spp.probe.command.live-instrument-remote"] + 1
             )
         });
     });
@@ -39,13 +79,12 @@ describe('Stats', function () {
 
 describe('Clients', function () {
     let response;
+    let probe;
     describe('/clients', function () {
         before(async function () {
-            return axios.get(`${host}/clients`, {
+            response = await axios.get(`${host}/clients`, {
                 headers: {Authorization: 'Bearer ' + await tokenPromise}
-            }).then(function (res) {
-                response = res;
-            })
+            });
         });
 
         it('200 status code', function () {
@@ -53,103 +92,37 @@ describe('Clients', function () {
         })
 
         it('contains nodejs probe', function () {
+            let probes = response.data.probes;
+            probes = probes.filter(p => oldClientsResponse.data.probes.find(op => op.id === p.id) === undefined);
+            assert.equal(probes.length, 1);
+            probe = probes[0];
+
             assert.equal(
-                response.data.probes[0].meta.language,
+                probe.meta.language,
                 "nodejs"
             )
         });
 
         it('live-instrument-remote remote registered', function () {
             assert.equal(
-                response.data.probes[0].meta.remotes[0],
+                probe.meta.remotes[0],
                 "spp.probe.command.live-instrument-remote"
             )
         });
     });
 });
 
-describe('Add Live Breakpoint', function () {
-    let response;
-    describe('/graphql', function () {
-        before(function () {
-            return addLiveBreakpoint(
-                {
-                    "source": "test.js",
-                    "line": 10
-                },
-                20
-            ).then(function (res) {
-                response = res;
-            })
-        });
-
-        it('200 status code', function () {
-            assert.equal(response.status, 200);
-        })
-
-        it('add has no errors', function () {
-            assert.equal(
-                response.data.errors,
-                null
-            )
-        })
-
-        it('verify location', function () {
-            assert.equal(
-                response.data.data.addLiveBreakpoint.location.source,
-                "test.js"
-            )
-            assert.equal(
-                response.data.data.addLiveBreakpoint.location.line,
-                10
-            )
-        });
-
-        it('verify hit limit', function () {
-            assert.equal(
-                response.data.data.addLiveBreakpoint.hitLimit,
-                20
-            )
-        });
-
-        it('remove breakpoint', function () {
-            return removeLiveInstrument(response.data.data.addLiveBreakpoint.id).then(function (res) {
-                response = res;
-            })
-        });
-
-        it('200 status code', function () {
-            assert.equal(response.status, 200);
-        })
-
-        it('remove has no errors', function () {
-            assert.equal(
-                response.data.errors,
-                null
-            )
-        })
-    });
-});
-
 describe('NodeJS Probe', function () {
-    const SourcePlusPlus = require("../dist/SourcePlusPlus.js");
     let instrumentId;
     let response;
     let liveInstrumentTest;
 
-    describe("connect test probe to platform", function () {
+    describe("test breakpoint", function () {
         before(async function () {
             liveInstrumentTest = require("./LiveInstrumentTest.js");
-
-            return SourcePlusPlus.start().then(function () {
-                console.log("SourcePlusPlus started");
-            }).catch(function (err) {
-                assert.fail(err);
-            });
         });
         after(async function () {
             liveInstrumentTest.stop();
-            await SourcePlusPlus.stop();
         });
 
         it('add live breakpoint', async function () {
