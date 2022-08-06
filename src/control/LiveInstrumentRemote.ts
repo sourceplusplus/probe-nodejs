@@ -125,8 +125,8 @@ export default class LiveInstrumentRemote {
                 });
             }));
 
-            Promise.all(promises).then(() => {
-                conditionsSatisfied.then(conditions => {
+            Promise.all(promises).then(() => conditionsSatisfied)
+                .then(conditions => {
                     for (let i = 0; i < instruments.length; i++) {
                         if (conditions[i]) {
                             let instrument = instruments[i];
@@ -163,19 +163,6 @@ export default class LiveInstrumentRemote {
                         }
                     }
                 });
-            });
-
-            // let frameId = message.params.callFrames[0].callFrameId;
-            // session.post('Debugger.evaluateOnCallFrame', {
-            //     callFrameId: frameId,
-            //     expression: 'i++'
-            // }, (err, res) => {
-            //     if (err) {
-            //         console.log(err);
-            //     } else {
-            //         console.log(res);
-            //     }
-            // });
         });
     }
 

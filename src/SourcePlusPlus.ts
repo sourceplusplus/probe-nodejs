@@ -64,6 +64,9 @@ namespace SourcePlusPlus {
 
         probeConfig.skywalking.collector.backend_service = getConfigValueString("SW_COLLECTOR_BACKEND_SERVICE",
             probeConfig.skywalking.collector.backend_service, `${probeConfig.spp.host}:${probeConfig.spp.grpc_port}`);
+        probeConfig.skywalking.agent.authentication = probeConfig.spp.authentication.tenant_id ?
+            `${probeConfig.spp.authentication.client_id}:${probeConfig.spp.authentication.client_secret}:${probeConfig.spp.authentication.tenant_id}`
+            : `${probeConfig.spp.authentication.client_id}:${probeConfig.spp.authentication.client_secret}`;
 
         // Copy given config
         Object.assign(probeConfig, config);
@@ -81,6 +84,7 @@ namespace SourcePlusPlus {
     async function attach(): Promise<void> {
         config.collectorAddress = probeConfig.skywalking.collector.backend_service;
         config.serviceName = probeConfig.skywalking.agent.service_name;
+        config.authorization = probeConfig.skywalking.agent.authentication;
         // TODO: logReporterActive doesn't exist?
         config.secure = false; //todo: fix this and SW_RECEIVER_GRPC_SSL_ENABLED=false
 
@@ -105,6 +109,9 @@ namespace SourcePlusPlus {
             server: ""
         });
         eventBus.enableReconnect(true);
+
+        // Add authentication headers
+        eventBus.defaultHeaders = probeConfig.spp.authentication;
 
         return new Promise<void>((resolve, reject) => {
             eventBus.onopen = () => {
