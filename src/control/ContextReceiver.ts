@@ -7,6 +7,7 @@ import * as grpc from '@grpc/grpc-js';
 import {LogReportServiceClient} from "skywalking-backend-js/lib/proto/logging/Logging_grpc_pb";
 import {Debugger} from "inspector";
 import VariableUtil from "../util/VariableUtil";
+import ProbeMemory from "../ProbeMemory";
 
 namespace ContextReceiver {
     let logReport = new LogReportServiceClient(
@@ -34,7 +35,13 @@ namespace ContextReceiver {
     }
 
     export function applyMeter(liveMeterId: string, variables) {
-        // TODO: implement
+        let liveMeter = ProbeMemory[`spp.live-meter:${liveMeterId}`];
+        let baseMeter = ProbeMemory[`spp.base-meter:${liveMeter.baseMeterId}`];
+        if (!baseMeter) {
+            ProbeMemory[`spp.base-meter:${liveMeterId}`] = baseMeter = null;
+        }
+
+        // TODO: implement (there does not appear to be meters in the nodejs version of skywalking)
     }
 
     export function applyBreakpoint(breakpointId: string, source: string | undefined, line: number,
@@ -78,13 +85,15 @@ namespace ContextReceiver {
 
     export function applyLog(liveLogId: string, logFormat: string, logArguments: string[], variables) {
         let logTags = new LogTags();
-        // TODO: Javascript doesn't have normal threading, so we can't really specify the thread
         logTags.addData(new KeyStringValuePair().setKey('log_id').setValue(liveLogId));
+        logTags.addData(new KeyStringValuePair().setKey('level').setValue('Live'));
+        logTags.addData(new KeyStringValuePair().setKey('thread').setValue('n/a'));
 
         for (let varName of logArguments) {
             let variable = tryFindVariable(varName, variables);
+            let value = variable ? variable.value : "null"; // TODO: Properly toString the variable (or encode it)
             if (variable) {
-                logTags.addData(new KeyStringValuePair().setKey(`argument.${varName}`).setValue(variable.value));
+                logTags.addData(new KeyStringValuePair().setKey(`argument.${varName}`).setValue(value));
             }
         }
 

@@ -165,7 +165,7 @@ describe('NodeJS Probe', function () {
             await addLiveBreakpoint({
                 "source": "test/LiveInstrumentTest.js",
                 "line": 8
-            }, 10).then(function (res) {
+            }, "!!true", 10).then(function (res) {
                 assert.equal(res.status, 200);
                 instrumentId = res.data.data.addLiveBreakpoint.id;
             }).catch(function (err) {
@@ -197,6 +197,7 @@ describe('NodeJS Probe', function () {
             }
 
             let variables = event.stackTrace.elements[0].variables;
+
             function locateVariable(name) {
                 for (let variable of variables) {
                     if (variable.name === name) {
@@ -231,7 +232,106 @@ describe('NodeJS Probe', function () {
                 null
             )
         })
+
+        it('verify probe is no longer aware of breakpoint', function (done) {
+            this.timeout(6000)
+
+            setTimeout(function () {
+                assert.equal(SourcePlusPlus.liveInstrumentRemote.instruments.size, 0);
+                done();
+            }, 5000);
+        })
     });
+
+    // describe("test log", function () {
+    //     before(async function () {
+    //         liveInstrumentTest = require("./LiveInstrumentTest.js");
+    //     });
+    //     after(async function () {
+    //         liveInstrumentTest.stop();
+    //     });
+    //
+    //     it('add live log', async function () {
+    //         await addLiveLog({
+    //             "source": "test/LiveInstrumentTest.js",
+    //             "line": 8
+    //         }, 10).then(function (res) {
+    //             assert.equal(res.status, 200);
+    //             instrumentId = res.data.data.addLiveLog.id;
+    //         }).catch(function (err) {
+    //             assert.fail(err)
+    //         });
+    //     });
+    //
+    //     it('verify probe is aware of log', function (done) {
+    //         this.timeout(6000)
+    //
+    //         setTimeout(function () {
+    //             assert.equal(SourcePlusPlus.liveInstrumentRemote.instruments.size, 1);
+    //             done();
+    //         }, 5000);
+    //     });
+    //
+    //     it('verify log is hit', async function () {
+    //         this.timeout(2000)
+    //
+    //         let event = await awaitMarkerEvent("BREAKPOINT_HIT");
+    //
+    //         assert.equal(event.breakpointId, instrumentId, "breakpointId is incorrect");
+    //         assert.equal(event.service, SourcePlusPlus.probeConfig.skywalking.agent.service_name, "service is incorrect");
+    //
+    //         let stackTraceElement = event.stackTrace.elements[0];
+    //         assert.equal(stackTraceElement.method, 'test', "method is incorrect");
+    //         if (!stackTraceElement.source.endsWith("test/LiveInstrumentTest.js:8")) {
+    //             assert.fail("source location is incorrect")
+    //         }
+    //
+    //         let variables = event.stackTrace.elements[0].variables;
+    //
+    //         function locateVariable(name) {
+    //             for (let variable of variables) {
+    //                 if (variable.name === name) {
+    //                     return variable;
+    //                 }
+    //             }
+    //         }
+    //
+    //         let iVariable = locateVariable("i");
+    //         let jVariable = locateVariable("j");
+    //
+    //         assert.equal(iVariable.scope, "LOCAL_VARIABLE", "scope of i is incorrect");
+    //         assert.equal(iVariable.liveClazz, "number", "type of i is incorrect");
+    //
+    //         assert.equal(jVariable.scope, "LOCAL_VARIABLE", "scope of j is incorrect");
+    //         assert.equal(jVariable.liveClazz, "number", "type of j is incorrect");
+    //     });
+    //
+    //     it('remove log', function () {
+    //         return removeLiveInstrument(instrumentId).then(function (res) {
+    //             response = res;
+    //         })
+    //     });
+    //
+    //     it('200 status code', function () {
+    //         assert.equal(response.status, 200);
+    //     })
+    //
+    //     it('remove has no errors', function () {
+    //         assert.equal(
+    //             response.data.errors,
+    //             null
+    //         )
+    //     })
+    //
+    //     it('verify probe is no longer aware of log', function (done) {
+    //         this.timeout(6000)
+    //
+    //         setTimeout(function () {
+    //             assert.equal(SourcePlusPlus.liveInstrumentRemote.instruments.size, 0);
+    //             done();
+    //         }, 5000);
+    //     })
+    // });
 });
 
 let markerListeners = {}
@@ -243,7 +343,7 @@ async function awaitMarkerEvent(eventName) {
     return new Promise(resolve => markerListeners[eventName].push(data => resolve(data)));
 }
 
-async function addLiveBreakpoint(location, hitLimit) {
+async function addLiveBreakpoint(location, condition, hitLimit) {
     const options = {
         method: 'POST',
         url: `${host}/graphql/spp`,
@@ -255,6 +355,30 @@ async function addLiveBreakpoint(location, hitLimit) {
             "query": "mutation ($input: LiveBreakpointInput!) { addLiveBreakpoint(input: $input) { id location { source line } condition expiresAt hitLimit applyImmediately applied pending throttle { limit step } } }",
             "variables": {
                 "input": {
+                    "location": location,
+                    "condition": condition,
+                    "hitLimit": hitLimit
+                }
+            }
+        }
+    };
+    return axios.request(options);
+}
+
+async function addLiveLog(location, hitLimit, logFormat, logArguments) {
+    const options = {
+        method: 'POST',
+        url: `${host}/graphql/spp`,
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + await tokenPromise
+        },
+        data: {
+            "query": "mutation ($input: LiveLogInput!) { addLiveLog(input: $input) { logFormat logArguments id location { source line } condition expiresAt hitLimit applyImmediately applied pending throttle { limit step } } }",
+            "variables": {
+                "input": {
+                    "logFormat": logFormat,
+                    "logArguments": logArguments,
                     "location": location,
                     "hitLimit": hitLimit
                 }

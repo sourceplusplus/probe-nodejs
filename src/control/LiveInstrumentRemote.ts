@@ -8,10 +8,7 @@ import LiveMeter from "../model/instruments/LiveMeter";
 import EventBus from "@vertx/eventbus-bridge-client.js";
 import LiveInstrumentCommand from "../model/command/LiveInstrumentCommand";
 import CommandType from "../model/command/CommandType";
-import LiveBreakpoint from "../model/instruments/LiveBreakpoint";
-import {randomUUID} from "crypto";
 import VariableUtil from "../util/VariableUtil";
-import SourcePlusPlus from "../SourcePlusPlus";
 
 export interface VariableInfo {
     block: Runtime.PropertyDescriptor[]
@@ -110,13 +107,24 @@ export default class LiveInstrumentRemote {
                 return new Promise<boolean>((resolve, reject) => {
                     this.session.post("Debugger.evaluateOnCallFrame", {
                         callFrameId: frame.callFrameId,
-                        expression: instrument.condition
+                        expression: instrument.condition,
+                        silent: false,
+                        throwOnSideEffect: true
                     }, (err, res) => {
                         if (err) {
-                            reject(err);
+                            console.log(`Error evaluating condition (${instrument.condition}): ${err}`);
+                            resolve(false);
                         } else {
-                            if (res.result.type !== 'boolean') {
-                                reject("Invalid condition for instrument id: " + instrument.id + ": " + instrument.condition);
+                            if (res.result.type === 'object' && res.result.subtype === 'error') {
+                                if (res.result.className === 'EvalError') {
+                                    console.log(`Could not evaluate condition (${instrument.condition}) due to possible side effects`);
+                                } else {
+                                    console.log(`Error evaluating condition (${instrument.condition}): ${res.result.description}`);
+                                }
+                                resolve(false);
+                            } else if (res.result.type !== 'boolean') {
+                                console.log("Invalid condition for instrument id: " + instrument.id + ": " + instrument.condition, res.result);
+                                resolve(false);
                             } else {
                                 resolve(res.result.value);
                             }
@@ -313,7 +321,7 @@ export default class LiveInstrumentRemote {
         if (command.commandType === CommandType.ADD_LIVE_INSTRUMENT) {
             command.instruments.forEach(this.addInstrument.bind(this));
         } else if (command.commandType === CommandType.REMOVE_LIVE_INSTRUMENT) {
-            command.instruments.forEach(this.removeInstrument.bind(this));
+            command.instruments.forEach(inst => this.removeInstrument(inst.id));
             command.locations.forEach(location => {
                 this.instruments.forEach(instrument => {
                     if (instrument.location.source == location.source && instrument.location.line == location.line) {
