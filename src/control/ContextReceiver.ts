@@ -26,7 +26,11 @@ namespace ContextReceiver {
     }
 
     function callFrameToString(frame: Debugger.CallFrame) {
-        return `${frame.functionName} - ${frame.url}:${frame.location.lineNumber}`;
+        // Ensure the location string is compatible with the platform
+        let location = frame.url.replace('file://', '')
+            .replace(':', '');
+
+        return `at ${frame.functionName} (${location}:${frame.location.lineNumber}:${frame.location.columnNumber})`;
     }
 
     export function applyMeter(liveMeterId: string, variables) {
@@ -37,21 +41,21 @@ namespace ContextReceiver {
                                     frames: Debugger.CallFrame[], variables) {
         let activeSpan = ContextManager.current.newLocalSpan(callFrameToString(frames[0]));
 
+        activeSpan.start();
+
         let localVars = variables['local'];
         let fieldVars = variables['field'];
 
-        for (let varName in localVars) {
-            let value = localVars[varName];
+        for (let value of localVars) {
             activeSpan.tag({
-                key: `spp.local-variable:${breakpointId}:${varName}`,
+                key: `spp.local-variable:${breakpointId}:${value.name}`,
                 overridable: false,
                 val: JSON.stringify(VariableUtil.encodeVariable(value))
             });
         }
-        for (let varName in fieldVars) {
-            let value = fieldVars[varName];
+        for (let value of fieldVars) {
             activeSpan.tag({
-                key: `spp.field:${breakpointId}:${varName}`,
+                key: `spp.field:${breakpointId}:${value.name}`,
                 overridable: false,
                 val: JSON.stringify(VariableUtil.encodeVariable(value))
             });
@@ -69,7 +73,7 @@ namespace ContextReceiver {
             val: JSON.stringify({source, line})
         })
 
-        ContextManager.current.stop(activeSpan)
+        activeSpan.stop();
     }
 
     export function applyLog(liveLogId: string, logFormat: string, logArguments: string[], variables) {

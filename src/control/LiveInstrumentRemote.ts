@@ -244,8 +244,6 @@ export default class LiveInstrumentRemote {
             return; // Instrument already exists or is in the cache
         }
 
-        console.log("Add instrument: " + instrument.id);
-
         let location = this.sourceMapper.mapLocation(instrument.location);
 
         if (!location) {

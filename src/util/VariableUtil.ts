@@ -46,6 +46,7 @@ namespace VariableUtil {
             // TODO: Correctly handle these, variable.value.description contains the entire class/function definition
             clazz = 'function';
             id = variable.value.objectId;
+            value = "TODO: Function/Class handling"
         } else {
             clazz = variable.value.type;
             id = ""; // Primitive types don't have an object id
@@ -64,11 +65,13 @@ namespace VariableUtil {
                 variable.value.value.forEach(v => {
                     obj[variable.name][v.name] = encodeVariable(v);
                 })
-            } else if (variable.value.type === 'function') {
-                // TODO: Function/class handling
-            } else {
+            } else if (value) {
                 obj[variable.name] = value;
+            } else {
+                obj[variable.name] = "null";
             }
+        } else {
+            obj[variable.name] = "null";
         }
 
         return obj;

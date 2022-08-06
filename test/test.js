@@ -3,6 +3,7 @@ const assert = require('assert');
 const {default: axios} = require("axios");
 const SourcePlusPlus = require("../dist/SourcePlusPlus");
 const EventBus = require("@vertx/eventbus-bridge-client.js");
+const {Source} = require("skywalking-backend-js/lib/proto/event/Event_pb");
 
 const tokenPromise = axios.get(`${host}/api/new-token?access_token=change-me`)
     .then(response => response.data);
@@ -62,7 +63,6 @@ before(async function () {
                         "auth-token": await tokenPromise
                     }, function (err, message) {
                         if (!err) {
-                            console.log(message);
                             if (markerListeners[message.body.eventType]) {
                                 markerListeners[message.body.eventType].forEach(listener => listener(JSON.parse(message.body.data)));
                             }
@@ -187,7 +187,32 @@ describe('NodeJS Probe', function () {
 
             let event = await awaitMarkerEvent("BREAKPOINT_HIT");
 
-            console.log(event);
+            assert.equal(event.breakpointId, instrumentId, "breakpointId is incorrect");
+            assert.equal(event.service, SourcePlusPlus.probeConfig.skywalking.agent.service_name, "service is incorrect");
+
+            let stackTraceElement = event.stackTrace.elements[0];
+            assert.equal(stackTraceElement.method, 'test', "method is incorrect");
+            if (!stackTraceElement.source.endsWith("test/LiveInstrumentTest.js:8")) {
+                assert.fail("source location is incorrect")
+            }
+
+            let variables = event.stackTrace.elements[0].variables;
+            function locateVariable(name) {
+                for (let variable of variables) {
+                    if (variable.name === name) {
+                        return variable;
+                    }
+                }
+            }
+
+            let iVariable = locateVariable("i");
+            let jVariable = locateVariable("j");
+
+            assert.equal(iVariable.scope, "LOCAL_VARIABLE", "scope of i is incorrect");
+            assert.equal(iVariable.liveClazz, "number", "type of i is incorrect");
+
+            assert.equal(jVariable.scope, "LOCAL_VARIABLE", "scope of j is incorrect");
+            assert.equal(jVariable.liveClazz, "number", "type of j is incorrect");
         });
 
         it('remove breakpoint', function () {
