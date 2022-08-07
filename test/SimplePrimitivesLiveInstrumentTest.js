@@ -3,6 +3,7 @@ const assert = require('assert');
 const {default: axios} = require("axios");
 const SourcePlusPlus = require("../dist/SourcePlusPlus");
 const EventBus = require("@vertx/eventbus-bridge-client.js");
+const TestUtils = require("./TestUtils.js");
 
 const tokenPromise = axios.get(`${host}/api/new-token?access_token=change-me`)
     .then(response => response.data);
@@ -39,8 +40,8 @@ before(async function () {
                         "auth-token": await tokenPromise
                     }, function (err, message) {
                         if (!err) {
-                            if (markerListeners[message.body.eventType]) {
-                                markerListeners[message.body.eventType]
+                            if (TestUtils.markerListeners[message.body.eventType]) {
+                                TestUtils.markerListeners[message.body.eventType]
                                     .forEach(listener => listener(JSON.parse(message.body.data)));
                             }
                         }
@@ -69,16 +70,18 @@ describe('NodeJS Probe', function () {
             let s = "hi"
             let f = 1.0
             let bool = true
-            console.log("done")
+            TestUtils.addLineLabel("done", () => TestUtils.getLineNumber())
         }
 
         it('add live breakpoint', async function () {
-            await addLiveBreakpoint({
+            simplePrimitives() //setup labels
+
+            await TestUtils.addLiveBreakpoint({
                 "source": "test/SimplePrimitivesLiveInstrumentTest.js",
-                "line": 72
+                "line": TestUtils.getLineNumber("done")
             }, null, 1).then(function (res) {
                 assert.equal(res.status, 200);
-                simplePrimitives();
+                simplePrimitives(); //trigger breakpoint
             }).catch(function (err) {
                 assert.fail(err)
             });
@@ -86,69 +89,29 @@ describe('NodeJS Probe', function () {
 
         it('verify breakpoint data', async function () {
             this.timeout(2000)
-            let event = await awaitMarkerEvent("BREAKPOINT_HIT");
+            let event = await TestUtils.awaitMarkerEvent("BREAKPOINT_HIT");
             assert.equal(event.stackTrace.elements[0].method, 'simplePrimitives');
             let variables = event.stackTrace.elements[0].variables;
 
-            let iVar = locateVariable("i", variables);
+            let iVar = TestUtils.locateVariable("i", variables);
             assert.equal(iVar.liveClazz, "number");
             assert.equal(iVar.value, 1);
 
-            let cVar = locateVariable("c", variables);
+            let cVar = TestUtils.locateVariable("c", variables);
             assert.equal(cVar.liveClazz, "string");
             assert.equal(cVar.value, "h");
 
-            let sVar = locateVariable("s", variables);
+            let sVar = TestUtils.locateVariable("s", variables);
             assert.equal(sVar.liveClazz, "string");
             assert.equal(sVar.value, "hi");
 
-            let fVar = locateVariable("f", variables);
+            let fVar = TestUtils.locateVariable("f", variables);
             assert.equal(fVar.liveClazz, "number");
             assert.equal(fVar.value, 1.0);
 
-            let boolVar = locateVariable("bool", variables);
+            let boolVar = TestUtils.locateVariable("bool", variables);
             //assert.equal(boolVar.liveClazz, "boolean"); //todo: this
             //assert.equal(boolVar.value, true); //todo: this
         });
     });
 });
-
-let markerListeners = {}
-
-async function awaitMarkerEvent(eventName) {
-    if (!markerListeners[eventName]) {
-        markerListeners[eventName] = [];
-    }
-    return new Promise(resolve => markerListeners[eventName].push(data => resolve(data)));
-}
-
-async function addLiveBreakpoint(location, condition, hitLimit) {
-    const options = {
-        method: 'POST',
-        url: `${host}/graphql/spp`,
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + await tokenPromise
-        },
-        data: {
-            "query": "mutation ($input: LiveBreakpointInput!) { addLiveBreakpoint(input: $input) { id location { source line } condition expiresAt hitLimit applyImmediately applied pending throttle { limit step } } }",
-            "variables": {
-                "input": {
-                    "location": location,
-                    "condition": condition,
-                    "hitLimit": hitLimit,
-                    "applyImmediately": true
-                }
-            }
-        }
-    };
-    return axios.request(options);
-}
-
-function locateVariable(name, variables) {
-    for (let variable of variables) {
-        if (variable.name === name) {
-            return variable;
-        }
-    }
-}
