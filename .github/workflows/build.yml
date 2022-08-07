@@ -62,13 +62,6 @@ jobs:
         run: |
           until $(curl --header "Authorization: Bearer ${{ env.SPP_JWT_TOKEN }}" --insecure --output /dev/null --silent --fail http://localhost:12800/health); do printf '.'; sleep 5; done
 
-      - name: Wait for probe
-        run: sleep 15s #todo: smarter waiting
-
-      - name: Verify probe connected
-        run: |
-          resp=$(curl --header "Authorization: Bearer ${{ env.SPP_JWT_TOKEN }}" --insecure http://localhost:12800/clients) && [[ $(echo $resp | jq -r ."probes"[0]."meta"."language") == "nodejs" ]] && echo $resp || (echo $resp && exit 1)
-
       - name: Run tests
         run: ./gradlew test
 
