@@ -1,10 +1,7 @@
 const assert = require('assert');
 const TestUtils = require("./TestUtils.js");
 
-before(TestUtils.setupProbe);
-after(TestUtils.teardownProbe);
-
-describe('NodeJS Probe', function () {
+module.exports = function () {
     describe("test breakpoint", function () {
         function simplePrimitives() {
             let i = 1
@@ -56,4 +53,4 @@ describe('NodeJS Probe', function () {
             assert.equal(boolVar.value, true);
         });
     });
-});
+};
