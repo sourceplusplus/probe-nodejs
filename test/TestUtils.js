@@ -67,7 +67,7 @@ class TestUtils {
         TestUtils.lineLabels[label] = lineNumberFunc.call();
     }
 
-    static getLineNumber(label) {
+    static getLineLabelNumber(label) {
         return TestUtils.lineLabels[label];
     }
 
@@ -109,7 +109,7 @@ class TestUtils {
         return axios.request(options);
     }
 
-    static calculateLineNumber() {
+    static getLineNumber() {
         var e = new Error();
         if (!e.stack) try {
             // IE requires the Error to actually be thrown or else the Error's 'stack'
@@ -128,6 +128,12 @@ class TestUtils {
             var frame = stack.shift();
         } while (!frameRE.exec(frame) && stack.length);
         return frameRE.exec(stack.shift())[1];
+    }
+
+    static getFilename = () => {
+        return () => {
+            return new Error().stack.match(/([^ \n])*([a-z]*:\/\/\/?)*?[a-z0-9\/\\]*\.js/ig)[0]
+        }
     }
 }
 
