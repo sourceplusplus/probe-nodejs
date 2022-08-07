@@ -16,7 +16,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -42,10 +42,11 @@ jobs:
         id: properties
         shell: bash
         run: |
-          PROPERTIES="$(./gradlew properties --console=plain -q)"
-          VERSION="$(echo "$PROPERTIES" | grep "^version:" | cut -f2- -d ' ')"
+          VERSION=$(grep "projectVersion" gradle.properties | cut -d'=' -f2)
           echo "::set-output name=version::$VERSION"
           echo "SPP_RELEASE_VERSION=${VERSION/-SNAPSHOT/}" >> $GITHUB_ENV
+          SPP_RELEASE_VERSION=${VERSION/-SNAPSHOT/}
+          echo "::set-output name=release_version::$SPP_RELEASE_VERSION"
 
       - name: Start platform
         run: ./gradlew assembleUp -Dbuild.profile=release -PprobeVersion=$SPP_RELEASE_VERSION
