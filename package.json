@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "mocha test/*.js",
+    "test": "mocha --exit test/*.js",
     "build-test": "npm run build && npm run test",
     "prepublishOnly": "npm run build"
   },
