@@ -3,6 +3,7 @@ const assert = require('assert');
 const {default: axios} = require("axios");
 const SourcePlusPlus = require("../dist/SourcePlusPlus");
 const EventBus = require("@vertx/eventbus-bridge-client.js");
+const path = require("path");
 
 const tokenPromise = axios.get(`${host}/api/new-token?access_token=change-me`)
     .then(response => response.data);
@@ -132,7 +133,10 @@ class TestUtils {
 
     static getFilename = () => {
         return () => {
-            return new Error().stack.match(/([^ \n])*([a-z]*:\/\/\/?)*?[a-z0-9\/\\]*\.js/ig)[0]
+            let basePath = process.cwd();
+            let str = /at .* \(([a-z0-9\/\\\s\-:]*\.js):\d+:\d+\)/ig.exec(new Error().stack)[1];
+            let relative = path.relative(basePath, str);
+            return relative.replaceAll('\\', '/');
         }
     }
 }

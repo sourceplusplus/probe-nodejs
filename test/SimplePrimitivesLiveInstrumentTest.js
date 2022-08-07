@@ -15,7 +15,7 @@ module.exports = function () {
         simplePrimitives() //setup labels
 
         await TestUtils.addLiveBreakpoint({
-            "source": TestUtils.getFilename(),
+            "source": TestUtils.getFilename()(),
             "line": TestUtils.getLineLabelNumber("done")
         }, null, 1).then(function (res) {
             assert.equal(res.status, 200);
