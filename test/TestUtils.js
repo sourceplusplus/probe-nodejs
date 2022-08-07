@@ -1,5 +1,8 @@
 const host = "http://localhost:12800";
+const assert = require('assert');
 const {default: axios} = require("axios");
+const SourcePlusPlus = require("../dist/SourcePlusPlus");
+const EventBus = require("@vertx/eventbus-bridge-client.js");
 
 const tokenPromise = axios.get(`${host}/api/new-token?access_token=change-me`)
     .then(response => response.data);
@@ -8,6 +11,57 @@ class TestUtils {
 
     static lineLabels = {}
     static markerListeners = {}
+    static markerEventBus;
+
+    static async setupProbe() {
+        this.timeout(15000);
+
+        await SourcePlusPlus.start().then(function () {
+            console.log("SourcePlusPlus started");
+        }).catch(function (err) {
+            assert.fail(err);
+        });
+
+        TestUtils.markerEventBus = new EventBus(host + "/marker/eventbus");
+        TestUtils.markerEventBus.enableReconnect(true);
+        await new Promise((resolve, reject) => {
+            TestUtils.markerEventBus.onopen = async function () {
+                //send marker connected
+                TestUtils.markerEventBus.send("spp.platform.status.marker-connected", {
+                    instanceId: "test-marker-id",
+                    connectionTime: Date.now(),
+                    meta: {}
+                }, {
+                    "auth-token": await tokenPromise
+                }, async (err) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        //listen for breakpoint events
+                        TestUtils.markerEventBus.registerHandler("spp.service.live-instrument.subscriber:system", {
+                            "auth-token": await tokenPromise
+                        }, function (err, message) {
+                            if (!err) {
+                                if (TestUtils.markerListeners[message.body.eventType]) {
+                                    TestUtils.markerListeners[message.body.eventType]
+                                        .forEach(listener => listener(JSON.parse(message.body.data)));
+                                }
+                            }
+                        });
+                        resolve();
+                    }
+                });
+            }
+        });
+
+        // Without waiting long enough, the spp.probe.command.live-instrument-remote counter isn't incremented
+        await new Promise(resolve => setTimeout(resolve, 10000));
+    }
+
+    static async teardownProbe() {
+        await SourcePlusPlus.stop();
+        TestUtils.markerEventBus.close();
+    }
 
     static addLineLabel(label, lineNumberFunc) {
         TestUtils.lineLabels[label] = lineNumberFunc.call();
@@ -55,7 +109,7 @@ class TestUtils {
         return axios.request(options);
     }
 
-    static getLineNumber() {
+    static calculateLineNumber() {
         var e = new Error();
         if (!e.stack) try {
             // IE requires the Error to actually be thrown or else the Error's 'stack'
