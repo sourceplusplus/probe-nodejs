@@ -52,8 +52,8 @@ describe('NodeJS Probe', function () {
             assert.equal(fVar.value, 1.0);
 
             let boolVar = TestUtils.locateVariable("bool", variables);
-            //assert.equal(boolVar.liveClazz, "boolean"); //todo: this
-            //assert.equal(boolVar.value, true); //todo: this
+            assert.equal(boolVar.liveClazz, "boolean");
+            assert.equal(boolVar.value, true);
         });
     });
 });
