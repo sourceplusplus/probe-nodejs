@@ -2,22 +2,22 @@ const assert = require('assert');
 const TestUtils = require("./TestUtils.js");
 
 module.exports = function () {
-    describe("test breakpoint", function () {
+    describe("test simple primitives", function () {
         function simplePrimitives() {
             let i = 1
             let c = 'h'
             let s = "hi"
             let f = 1.0
             let bool = true
-            TestUtils.addLineLabel("done", () => TestUtils.calculateLineNumber())
+            TestUtils.addLineLabel("done", () => TestUtils.getLineNumber())
         }
 
         it('add live breakpoint', async function () {
             simplePrimitives() //setup labels
 
             await TestUtils.addLiveBreakpoint({
-                "source": "test/SimplePrimitivesLiveInstrumentTest.js",
-                "line": TestUtils.getLineNumber("done")
+                "source": TestUtils.getFilename(),
+                "line": TestUtils.getLineLabelNumber("done")
             }, null, 1).then(function (res) {
                 assert.equal(res.status, 200);
                 simplePrimitives(); //trigger breakpoint
