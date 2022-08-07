@@ -10,6 +10,7 @@ declare module '@vertx/eventbus-bridge-client.js' {
     }
 
     class EventBus {
+        defaultHeaders: any | undefined;
         onopen: () => void;
 
         constructor(host: string, options?: any);

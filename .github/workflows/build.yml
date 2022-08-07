@@ -16,7 +16,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -42,18 +42,18 @@ jobs:
         id: properties
         shell: bash
         run: |
-          PROPERTIES="$(./gradlew properties --console=plain -q)"
-          VERSION="$(echo "$PROPERTIES" | grep "^version:" | cut -f2- -d ' ')"
+          VERSION=$(grep "projectVersion" gradle.properties | cut -d'=' -f2)
           echo "::set-output name=version::$VERSION"
           echo "SPP_RELEASE_VERSION=${VERSION/-SNAPSHOT/}" >> $GITHUB_ENV
+          SPP_RELEASE_VERSION=${VERSION/-SNAPSHOT/}
+          echo "::set-output name=release_version::$SPP_RELEASE_VERSION"
 
-      - run: ./gradlew assembleUp -Dbuild.profile=release -PprobeVersion=$SPP_RELEASE_VERSION
+      - name: Start platform
+        run: ./gradlew assembleUp -Dbuild.profile=release -PprobeVersion=$SPP_RELEASE_VERSION
 
       - name: Docker IPs
         run: docker inspect --format='{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aq)
 
-      - name: Set E2E_APP_HOST
-        run: E2E_APP_HOST=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aqf "name=e2e-test")) && echo "E2E_APP_HOST=$E2E_APP_HOST" >> $GITHUB_ENV
       - name: Set SPP_PLATFORM_HOST
         run: SPP_PLATFORM_HOST=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aqf "name=spp-platform")) && echo "SPP_PLATFORM_HOST=$SPP_PLATFORM_HOST" >> $GITHUB_ENV
       - name: Set SPP_JWT_TOKEN
@@ -63,15 +63,10 @@ jobs:
         run: |
           until $(curl --header "Authorization: Bearer ${{ env.SPP_JWT_TOKEN }}" --insecure --output /dev/null --silent --fail http://localhost:12800/health); do printf '.'; sleep 5; done
 
-      - name: Wait for probe
-        run: sleep 15s #todo: smarter waiting
-
-      - name: Verify probe connected
-        run: |
-          resp=$(curl --header "Authorization: Bearer ${{ env.SPP_JWT_TOKEN }}" --insecure http://localhost:12800/clients) && [[ $(echo $resp | jq -r ."probes"[0]."meta"."language") == "nodejs" ]] && echo $resp || (echo $resp && exit 1)
-
       - name: Run tests
-        run: npm run test
+        run: ./gradlew test
+        env:
+          CI: true
 
       - run: ./gradlew composeLogs
         if: ${{ always() }}

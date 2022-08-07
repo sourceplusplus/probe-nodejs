@@ -1,27 +1,16 @@
 version: '3.3'
 services:
-  e2e-test:
-    container_name: e2e-test
-    build:
-      context: .
-    depends_on:
-      - spp-platform
-    links:
-      - spp-platform
-    ports:
-      - "5000:5000"
   spp-platform:
     image: sourceplusplus/spp-platform:latest
     container_name: spp-platform
     hostname: spp-platform
     ports:
       - "11800:11800"
-      - "11801:11801" #todo: shouldn't be necessary
       - "12800:12800"
+      - "5106:5106"
     environment:
-      - SPP_LOGGING_LEVEL=trace
+      - JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5106
+      - SPP_LOGGING_LEVEL=debug
       - SW_RECEIVER_GRPC_SSL_ENABLED=false #todo: fix this and config.secure = false
       - SPP_HTTP_SSL_ENABLED=false #todo; Change back to ssl once the library works with self-signed certs
-    volumes:
-      - ./config/spp-platform.crt:/skywalking/config/spp-platform.crt
-      - ./config/spp-platform.key:/skywalking/config/spp-platform.key
+      - SPP_GRPC_SSL_ENABLED=false

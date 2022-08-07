@@ -12,6 +12,13 @@ interface ConfigSPP {
     ssl_enabled?: boolean
     probe_certificate?: string
     probe_metadata?: any
+    authentication?: ConfigAuthentication
+}
+
+interface ConfigAuthentication {
+    client_id?: string
+    client_secret?: string
+    tenant_id?: string
 }
 
 interface ConfigSkywalking {
@@ -21,6 +28,7 @@ interface ConfigSkywalking {
 
 interface ConfigSkywalkingAgent {
     service_name?: string
+    authentication?: string
 }
 
 interface ConfigSkywalkingCollector {

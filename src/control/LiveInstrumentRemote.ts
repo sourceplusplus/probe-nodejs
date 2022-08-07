@@ -8,10 +8,7 @@ import LiveMeter from "../model/instruments/LiveMeter";
 import EventBus from "@vertx/eventbus-bridge-client.js";
 import LiveInstrumentCommand from "../model/command/LiveInstrumentCommand";
 import CommandType from "../model/command/CommandType";
-import LiveBreakpoint from "../model/instruments/LiveBreakpoint";
-import {randomUUID} from "crypto";
 import VariableUtil from "../util/VariableUtil";
-import SourcePlusPlus from "../SourcePlusPlus";
 
 export interface VariableInfo {
     block: Runtime.PropertyDescriptor[]
@@ -32,6 +29,7 @@ export default class LiveInstrumentRemote {
     breakpointIdToInstrumentIds: Map<string, string[]> = new Map<string, string[]>();
     instrumentCache: Map<string, CachedInstrument> = new Map<string, CachedInstrument>();
     eventBus: EventBus;
+    pendingBreakpoints: Map<string, Promise<string>> = new Map<string, Promise<string>>();
 
     constructor(eventBus: EventBus) {
         this.eventBus = eventBus;
@@ -103,19 +101,30 @@ export default class LiveInstrumentRemote {
 
             let instruments = instrumentIds.map(id => this.instruments.get(id));
             let conditionsSatisfied = Promise.all(instruments.map(instrument => {
-                if (instrument.condition === undefined)
+                if (instrument.condition === undefined || instrument.condition === null)
                     return true;
 
                 return new Promise<boolean>((resolve, reject) => {
                     this.session.post("Debugger.evaluateOnCallFrame", {
                         callFrameId: frame.callFrameId,
-                        expression: instrument.condition
+                        expression: instrument.condition,
+                        silent: false,
+                        throwOnSideEffect: true
                     }, (err, res) => {
                         if (err) {
-                            reject(err);
+                            console.log(`Error evaluating condition (${instrument.condition}): ${err}`);
+                            resolve(false);
                         } else {
-                            if (res.result.type !== 'boolean') {
-                                reject("Invalid condition for instrument id: " + instrument.id + ": " + instrument.condition);
+                            if (res.result.type === 'object' && res.result.subtype === 'error') {
+                                if (res.result.className === 'EvalError') {
+                                    console.log(`Could not evaluate condition (${instrument.condition}) due to possible side effects`);
+                                } else {
+                                    console.log(`Error evaluating condition (${instrument.condition}): ${res.result.description}`);
+                                }
+                                resolve(false);
+                            } else if (res.result.type !== 'boolean') {
+                                console.log("Invalid condition for instrument id: " + instrument.id + ": " + instrument.condition, res.result);
+                                resolve(false);
                             } else {
                                 resolve(res.result.value);
                             }
@@ -124,8 +133,8 @@ export default class LiveInstrumentRemote {
                 });
             }));
 
-            Promise.all(promises).then(() => {
-                conditionsSatisfied.then(conditions => {
+            Promise.all(promises).then(() => conditionsSatisfied)
+                .then(conditions => {
                     for (let i = 0; i < instruments.length; i++) {
                         if (conditions[i]) {
                             let instrument = instruments[i];
@@ -138,7 +147,7 @@ export default class LiveInstrumentRemote {
                                     instrument.id,
                                     instrument.location.source,
                                     instrument.location.line,
-                                    frame,
+                                    message.params.callFrames,
                                     variables
                                 );
                             } else if (instrument.type == LiveInstrumentType.LOG) {
@@ -162,19 +171,6 @@ export default class LiveInstrumentRemote {
                         }
                     }
                 });
-            });
-
-            // let frameId = message.params.callFrames[0].callFrameId;
-            // session.post('Debugger.evaluateOnCallFrame', {
-            //     callFrameId: frameId,
-            //     expression: 'i++'
-            // }, (err, res) => {
-            //     if (err) {
-            //         console.log(err);
-            //     } else {
-            //         console.log(res);
-            //     }
-            // });
         });
     }
 
@@ -219,8 +215,11 @@ export default class LiveInstrumentRemote {
         });
     }
 
-    private setBreakpoint(scriptId: string, line: number): Promise<string> {
-        return new Promise<string>((resolve, reject) => this.session.post("Debugger.setBreakpoint", {
+    private async setBreakpoint(scriptId: string, line: number): Promise<string> {
+        if (this.pendingBreakpoints.has(scriptId + ':' + line)) {
+            return this.pendingBreakpoints.get(scriptId + ':' + line);
+        }
+        let promise = new Promise<string>((resolve, reject) => this.session.post("Debugger.setBreakpoint", {
             location: {
                 scriptId: scriptId,
                 lineNumber: line
@@ -232,6 +231,8 @@ export default class LiveInstrumentRemote {
                 resolve(res.breakpointId);
             }
         }));
+        this.pendingBreakpoints.set(scriptId + ':' + line, promise);
+        return promise;
     }
 
     private removeBreakpoint(breakpointId: string) {
@@ -246,7 +247,11 @@ export default class LiveInstrumentRemote {
         });
     }
 
-    addInstrument(instrument: LiveInstrument) {
+    async addInstrument(instrument: LiveInstrument): Promise<void> {
+        if (this.instruments.get(instrument.id) || this.instrumentCache.get(instrument.id)) {
+            return; // Instrument already exists or is in the cache
+        }
+
         let location = this.sourceMapper.mapLocation(instrument.location);
 
         if (!location) {
@@ -257,24 +262,23 @@ export default class LiveInstrumentRemote {
             return;
         }
 
+        // Immediately add the instrument, so we don't try to add it again
+        this.instruments.set(instrument.id, instrument);
+
         let breakpointId = this.locationToBreakpointId.get(location.scriptId + ":" + location.line);
         if (breakpointId) {
             this.breakpointIdToInstrumentIds.get(breakpointId).push(instrument.id);
-            this.instruments.set(instrument.id, instrument);
             instrument.meta.breakpointId = breakpointId;
             this.eventBus.publish("spp.processor.status.live-instrument-applied", instrument.toJson())
             return;
         }
 
-        this.setBreakpoint(location.scriptId, location.line).then(breakpointId => {
+        return this.setBreakpoint(location.scriptId, location.line).then(breakpointId => {
             this.locationToBreakpointId.set(location.scriptId + ":" + location.line, breakpointId);
             this.breakpointIdToInstrumentIds.set(breakpointId, [instrument.id]);
-            this.instruments.set(instrument.id, instrument);
             instrument.meta.breakpointId = breakpointId;
             this.eventBus.publish("spp.processor.status.live-instrument-applied", instrument.toJson())
-        }).catch(err => {
-            console.log(err);
-        });
+        })
     }
 
     removeInstrument(instrumentId: string) {
@@ -317,7 +321,7 @@ export default class LiveInstrumentRemote {
         if (command.commandType === CommandType.ADD_LIVE_INSTRUMENT) {
             command.instruments.forEach(this.addInstrument.bind(this));
         } else if (command.commandType === CommandType.REMOVE_LIVE_INSTRUMENT) {
-            command.instruments.forEach(this.removeInstrument.bind(this));
+            command.instruments.forEach(inst => this.removeInstrument(inst.id));
             command.locations.forEach(location => {
                 this.instruments.forEach(instrument => {
                     if (instrument.location.source == location.source && instrument.location.line == location.line) {
@@ -337,18 +341,5 @@ export default class LiveInstrumentRemote {
                 this.instrumentCache.delete(key);
             }
         });
-    }
-
-    test() {
-        let instrument = new LiveBreakpoint();
-        instrument.id = randomUUID();
-        instrument.condition = "false";
-        instrument.location = {source: "test/javascript/test.js", line: 8};
-        instrument.hitLimit = 1;
-        instrument.applyImmediately = true;
-        instrument.applied = false;
-        instrument.pending = false;
-        instrument.meta = {};
-        this.addInstrument(instrument);
     }
 }
