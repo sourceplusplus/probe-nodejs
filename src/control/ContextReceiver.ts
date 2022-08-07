@@ -60,13 +60,19 @@ namespace ContextReceiver {
                 val: JSON.stringify(VariableUtil.encodeVariable(value))
             });
         }
-        for (let value of fieldVars) {
-            activeSpan.tag({
-                key: `spp.field:${breakpointId}:${value.name}`,
-                overridable: false,
-                val: JSON.stringify(VariableUtil.encodeVariable(value))
-            });
-        }
+        // for (let value of fieldVars) {
+        //     if (value.name == undefined) {
+        //         console.log(`Warning: field variable has no name: ${JSON.stringify(value)}`);
+        //         return;
+        //     }
+        //     console.log("got field variable: " + value.name);
+        //
+        //     activeSpan.tag({
+        //         key: `spp.field:${breakpointId}:${value.name}`,
+        //         overridable: false,
+        //         val: JSON.stringify(VariableUtil.encodeVariable(value))
+        //     });
+        // }
 
         activeSpan.tag({
             key: `spp.stack-trace:${breakpointId}`,
