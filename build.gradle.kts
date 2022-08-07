@@ -5,6 +5,10 @@ plugins {
 }
 
 tasks {
+    register<Exec>("test") {
+        executable = getNpm()
+        args("run", "build-test")
+    }
     register("cleanPackDir") {
         file("pack/").mkdirs()
         file("pack/").listFiles()?.forEach { it.delete() }
@@ -39,12 +43,11 @@ tasks {
 }
 
 dockerCompose {
-    dockerComposeWorkingDirectory.set(File("./e2e"))
     removeVolumes.set(true)
     waitForTcpPorts.set(false)
 }
 
-// Make npm work on windows
+// Make npm work on Windows
 fun getNpm(): String {
     return if (Os.isFamily(Os.FAMILY_WINDOWS)) {
         "npm.cmd"
