@@ -111,20 +111,22 @@ export default class LiveInstrumentRemote {
                             returnByValue: true      // Return the entire JSON object rather than just the remote id
                         }, (err, res) => {
                             if (err) {
-                                console.log(`Error evaluating condition (${instrument.condition}): ${err}`);
+                                this.handleConditionalFailed(instrument,
+                                    `Error evaluating condition (${instrument.condition}): ${err}`);
                                 resolve({success: false});
                             } else {
-                                console.log(res.result);
-
                                 if (res.result.type === 'object' && res.result.subtype === 'error') {
                                     if (res.result.className === 'EvalError') {
-                                        console.log(`Could not evaluate condition (${instrument.condition}) due to possible side effects`);
+                                        this.handleConditionalFailed(instrument,
+                                            `Could not evaluate condition (${instrument.condition}) due to possible side effects`);
                                     } else {
-                                        console.log(`Error evaluating condition (${instrument.condition}): ${res.result.description}`);
+                                        this.handleConditionalFailed(instrument,
+                                            `Error evaluating condition (${instrument.condition}): ${res.result.description}`);
                                     }
                                     resolve({success: false});
                                 } else if (res.result.type !== 'object') {
-                                    console.log("Invalid condition for instrument id: " + instrument.id + ": " + instrument.condition, res.result);
+                                    this.handleConditionalFailed(instrument,
+                                        `Invalid condition for instrument id: ${instrument.id}: ${instrument.condition}  ==>  ${res.result}`);
                                     resolve({success: false});
                                 } else {
                                     resolve(res.result.value);
@@ -331,6 +333,15 @@ export default class LiveInstrumentRemote {
                 })
             });
         }
+    }
+
+    handleConditionalFailed(instrument: LiveInstrument, error: string) {
+        this.removeInstrument(instrument.id);
+        this.eventBus.publish("spp.processor.status.live-instrument-removed", {
+            occurredAt: Date.now(),
+            instrument: JSON.stringify(instrument.toJson()),
+            cause: `EventBusException:LiveInstrumentException[CONDITIONAL_FAILED]: ${error}`
+        });
     }
 
     // TODO: Call this regularly to clean up old instruments
