@@ -43,6 +43,8 @@ export default class LiveInstrumentRemote {
         }
 
         this.sourceMapper = new SourceMapper(this.scriptLoaded.bind(this));
+
+        ContextReceiver.initialize();
     }
 
     async start(): Promise<void> {

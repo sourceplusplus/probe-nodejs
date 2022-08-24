@@ -10,10 +10,14 @@ import VariableUtil from "../util/VariableUtil";
 import ProbeMemory from "../ProbeMemory";
 
 namespace ContextReceiver {
-    let logReport = new LogReportServiceClient(
-        config.collectorAddress,
-        config.secure ? grpc.credentials.createSsl() : grpc.credentials.createInsecure()
-    );
+    let logReport;
+
+    export function initialize() {
+        logReport = new LogReportServiceClient(
+            config.collectorAddress,
+            config.secure ? grpc.credentials.createSsl() : grpc.credentials.createInsecure()
+        );
+    }
 
     function tryFindVariable(varName, variables) {
         for (let scope in variables) {
