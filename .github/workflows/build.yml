@@ -32,10 +32,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-
-      - name: Install dependencies
-        run: npm install
-
       - name: Export Properties
         id: properties
         shell: bash
@@ -47,7 +43,7 @@ jobs:
           echo "::set-output name=release_version::$SPP_RELEASE_VERSION"
 
       - name: Start platform
-        run: ./gradlew assembleUp -Dbuild.profile=release -PprobeVersion=$SPP_RELEASE_VERSION
+        run: ./gradlew assembleUp
 
       - name: Docker IPs
         run: docker inspect --format='{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aq)
@@ -75,7 +71,6 @@ jobs:
         with:
           name: docker-logs
           path: ./build/containers-logs
-
 
   buildOnLinux:
     runs-on: ubuntu-latest
@@ -141,8 +136,14 @@ jobs:
           name: docker-logs
           path: ./build/containers-logs
 
+  releaseDraft:
+    name: Release Draft
+    needs: [ buildOnWindows, buildOnLinux ]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+
       - name: Remove Old Release Drafts
-        if: github.ref == 'refs/heads/master'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -153,12 +154,11 @@ jobs:
           curl -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPOSITORY/releases/{}
 
       - name: Create release draft
-        if: github.ref == 'refs/heads/master'
         id: createDraft
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.SPP_RELEASE_VERSION }}
-          release_name: v${{ env.SPP_RELEASE_VERSION }}
+          tag_name: ${{ needs.buildOnLinux.outputs.release_version }}
+          release_name: v${{ needs.buildOnLinux.outputs.release_version }}
           draft: true
