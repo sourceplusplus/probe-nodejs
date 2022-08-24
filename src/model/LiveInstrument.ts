@@ -40,4 +40,11 @@ export default class LiveInstrument {
             meta: this.meta
         };
     }
+
+    createExpression() {
+        if (this.condition == null) {
+            return `(() => { return {success: true} })()`;
+        }
+        return `(() => { return {success: ${this.condition}} })()`;
+    }
 }

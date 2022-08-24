@@ -5,3 +5,4 @@ after(TestUtils.teardownProbe);
 
 describe("test simple primitives", require("./SimplePrimitivesLiveInstrumentTest"));
 describe("test simple collections", require("./SimpleCollectionsLiveInstrumentTest"));
+describe("test live log", require("./LiveLogTest"));

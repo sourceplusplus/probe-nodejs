@@ -1,11 +1,31 @@
 import LiveInstrument from "../LiveInstrument";
-import LiveSourceLocation from "../LiveSourceLocation";
-import InstrumentThrottle from "../throttle/InstrumentThrottle";
 import LiveInstrumentType from "../LiveInstrumentType";
-import HitThrottle from "../throttle/HitThrottle";
 
 export default class LiveLog extends LiveInstrument {
     type = LiveInstrumentType.LOG;
     logFormat: string
     logArguments: string[]
+
+    createExpression(): string {
+        let logArgumentsExpression = this.logArguments
+            .map(arg => `data['${arg}'] = ${arg}.toString()`)
+            .join(';');
+        if (this.condition == null) {
+            return `(() => { 
+                let data = {success: true}; 
+                (data => {${logArgumentsExpression}})(data); 
+                return data;
+            })()`;
+        } else {
+            return `(() => {
+                if (${this.condition}) { 
+                    let data = {success: true}; 
+                    (data => {${logArgumentsExpression}})(data); 
+                    returndata; 
+                } else { 
+                    return {success: false}; 
+                }
+            })()`;
+        }
+    }
 }

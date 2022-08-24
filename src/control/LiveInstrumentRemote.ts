@@ -93,84 +93,85 @@ export default class LiveInstrumentRemote {
                     }));
             }
 
-            let instrumentIds = this.breakpointIdToInstrumentIds.get(message.params.hitBreakpoints[0]); // TODO: Handle multiple hit breakpoints
-            if (!instrumentIds) {
-                this.removeBreakpoint(message.params.hitBreakpoints[0]);
-                return;
-            }
+            message.params.hitBreakpoints.forEach(breakpointId => { // There should only be a single breakpoint, but handle multiple just in case
+                let instrumentIds = this.breakpointIdToInstrumentIds.get(breakpointId);
+                if (!instrumentIds) {
+                    this.removeBreakpoint(message.params.hitBreakpoints[0]);
+                    return;
+                }
 
-            let instruments = instrumentIds.map(id => this.instruments.get(id));
-            let conditionsSatisfied = Promise.all(instruments.map(instrument => {
-                if (instrument.condition === undefined || instrument.condition === null)
-                    return true;
-
-                return new Promise<boolean>((resolve, reject) => {
-                    this.session.post("Debugger.evaluateOnCallFrame", {
-                        callFrameId: frame.callFrameId,
-                        expression: instrument.condition,
-                        silent: false,
-                        throwOnSideEffect: true
-                    }, (err, res) => {
-                        if (err) {
-                            console.log(`Error evaluating condition (${instrument.condition}): ${err}`);
-                            resolve(false);
-                        } else {
-                            if (res.result.type === 'object' && res.result.subtype === 'error') {
-                                if (res.result.className === 'EvalError') {
-                                    console.log(`Could not evaluate condition (${instrument.condition}) due to possible side effects`);
-                                } else {
-                                    console.log(`Error evaluating condition (${instrument.condition}): ${res.result.description}`);
-                                }
-                                resolve(false);
-                            } else if (res.result.type !== 'boolean') {
-                                console.log("Invalid condition for instrument id: " + instrument.id + ": " + instrument.condition, res.result);
-                                resolve(false);
+                let instruments = instrumentIds.map(id => this.instruments.get(id));
+                let dataGathered = Promise.all(instruments.map(instrument => {
+                    return new Promise<any>((resolve, reject) => {
+                        this.session.post("Debugger.evaluateOnCallFrame", {
+                            callFrameId: frame.callFrameId,
+                            expression: instrument.createExpression(),
+                            silent: false,           // In case of an exception, don't affect the program flow
+                            throwOnSideEffect: true, // Disallow side effects
+                            returnByValue: true      // Return the entire JSON object rather than just the remote id
+                        }, (err, res) => {
+                            if (err) {
+                                console.log(`Error evaluating condition (${instrument.condition}): ${err}`);
+                                resolve({success: false});
                             } else {
-                                resolve(res.result.value);
+                                console.log(res.result);
+
+                                if (res.result.type === 'object' && res.result.subtype === 'error') {
+                                    if (res.result.className === 'EvalError') {
+                                        console.log(`Could not evaluate condition (${instrument.condition}) due to possible side effects`);
+                                    } else {
+                                        console.log(`Error evaluating condition (${instrument.condition}): ${res.result.description}`);
+                                    }
+                                    resolve({success: false});
+                                } else if (res.result.type !== 'object') {
+                                    console.log("Invalid condition for instrument id: " + instrument.id + ": " + instrument.condition, res.result);
+                                    resolve({success: false});
+                                } else {
+                                    resolve(res.result.value);
+                                }
+                            }
+                        });
+                    });
+                }));
+
+                Promise.all(promises).then(() => dataGathered)
+                    .then(data => {
+                        for (let i = 0; i < instruments.length; i++) {
+                            if (data[i].success) {
+                                let instrument = instruments[i];
+                                if (!instrument) {
+                                    continue;
+                                }
+
+                                if (instrument.type == LiveInstrumentType.BREAKPOINT) {
+                                    ContextReceiver.applyBreakpoint(
+                                        instrument.id,
+                                        instrument.location.source,
+                                        instrument.location.line,
+                                        message.params.callFrames,
+                                        variables
+                                    );
+                                } else if (instrument.type == LiveInstrumentType.LOG) {
+                                    let logInstrument = <LiveLog>instrument;
+                                    ContextReceiver.applyLog(
+                                        instrument.id,
+                                        logInstrument.logFormat,
+                                        data[i].logArguments
+                                    );
+                                } else if (instrument.type == LiveInstrumentType.METER) {
+                                    let meterInstrument = <LiveMeter>instrument;
+                                    ContextReceiver.applyMeter(
+                                        instrument.id,
+                                        variables
+                                    );
+                                }
+                                if (instrument.isFinished()) {
+                                    this.removeBreakpoint(instrument.id);
+                                }
                             }
                         }
                     });
-                });
-            }));
-
-            Promise.all(promises).then(() => conditionsSatisfied)
-                .then(conditions => {
-                    for (let i = 0; i < instruments.length; i++) {
-                        if (conditions[i]) {
-                            let instrument = instruments[i];
-                            if (!instrument) {
-                                continue;
-                            }
-
-                            if (instrument.type == LiveInstrumentType.BREAKPOINT) {
-                                ContextReceiver.applyBreakpoint(
-                                    instrument.id,
-                                    instrument.location.source,
-                                    instrument.location.line,
-                                    message.params.callFrames,
-                                    variables
-                                );
-                            } else if (instrument.type == LiveInstrumentType.LOG) {
-                                let logInstrument = <LiveLog>instrument;
-                                ContextReceiver.applyLog(
-                                    instrument.id,
-                                    logInstrument.logFormat,
-                                    logInstrument.logArguments,
-                                    variables
-                                );
-                            } else if (instrument.type == LiveInstrumentType.METER) {
-                                let meterInstrument = <LiveMeter>instrument;
-                                ContextReceiver.applyMeter(
-                                    instrument.id,
-                                    variables
-                                );
-                            }
-                            if (instrument.isFinished()) {
-                                this.removeBreakpoint(instrument.id);
-                            }
-                        }
-                    }
-                });
+            });
         });
     }
 
