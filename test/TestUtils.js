@@ -23,6 +23,13 @@ class TestUtils {
             assert.fail(err);
         });
 
+        await TestUtils.setupMarker();
+
+        // Without waiting long enough, the spp.probe.command.live-instrument-remote counter isn't incremented
+        await new Promise(resolve => setTimeout(resolve, 10000));
+    }
+
+    static async setupMarker() {
         TestUtils.markerEventBus = new EventBus(host + "/marker/eventbus");
         TestUtils.markerEventBus.enableReconnect(true);
         await new Promise((resolve, reject) => {
@@ -42,6 +49,7 @@ class TestUtils {
                         TestUtils.markerEventBus.registerHandler("spp.service.live-instrument.subscriber:system", {
                             "auth-token": await tokenPromise
                         }, function (err, message) {
+                            console.log(message);
                             if (!err) {
                                 if (TestUtils.markerListeners[message.body.eventType]) {
                                     TestUtils.markerListeners[message.body.eventType]
@@ -54,13 +62,14 @@ class TestUtils {
                 });
             }
         });
-
-        // Without waiting long enough, the spp.probe.command.live-instrument-remote counter isn't incremented
-        await new Promise(resolve => setTimeout(resolve, 10000));
     }
 
     static async teardownProbe() {
         await SourcePlusPlus.stop();
+        TestUtils.markerEventBus.close();
+    }
+
+    static async teardownMarker() {
         TestUtils.markerEventBus.close();
     }
 
@@ -103,6 +112,31 @@ class TestUtils {
                         "condition": condition,
                         "hitLimit": hitLimit,
                         "applyImmediately": true
+                    }
+                }
+            }
+        };
+        return axios.request(options);
+    }
+
+    static async addLiveLog(location, condition, hitLimit, logFormat, logArguments) {
+        const options = {
+            method: 'POST',
+            url: `${host}/graphql/spp`,
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + await tokenPromise
+            },
+            data: {
+                "query": "mutation ($input: LiveLogInput!) { addLiveLog(input: $input) { id logFormat logArguments location { source line } condition expiresAt hitLimit applyImmediately applied pending throttle { limit step } } }",
+                "variables": {
+                    "input": {
+                        "logFormat": logFormat,
+                        "logArguments": logArguments,
+                        "location": location,
+                        "condition": condition,
+                        "hitLimit": hitLimit,
+                        "applyImmediately": true,
                     }
                 }
             }

@@ -10,10 +10,14 @@ import VariableUtil from "../util/VariableUtil";
 import ProbeMemory from "../ProbeMemory";
 
 namespace ContextReceiver {
-    let logReport = new LogReportServiceClient(
-        config.collectorAddress,
-        config.secure ? grpc.credentials.createSsl() : grpc.credentials.createInsecure()
-    );
+    let logReport;
+
+    export function initialize() {
+        logReport = new LogReportServiceClient(
+            config.collectorAddress,
+            config.secure ? grpc.credentials.createSsl() : grpc.credentials.createInsecure()
+        );
+    }
 
     function tryFindVariable(varName, variables) {
         for (let scope in variables) {
@@ -89,17 +93,17 @@ namespace ContextReceiver {
         activeSpan.stop();
     }
 
-    export function applyLog(liveLogId: string, logFormat: string, logArguments: string[], variables) {
+    export function applyLog(liveLogId: string, logFormat: string, logArguments: any) {
         let logTags = new LogTags();
         logTags.addData(new KeyStringValuePair().setKey('log_id').setValue(liveLogId));
         logTags.addData(new KeyStringValuePair().setKey('level').setValue('Live'));
         logTags.addData(new KeyStringValuePair().setKey('thread').setValue('n/a'));
 
-        for (let varName of logArguments) {
-            let variable = tryFindVariable(varName, variables);
-            let value = variable ? variable.value : "null"; // TODO: Properly toString the variable (or encode it)
-            if (variable) {
-                logTags.addData(new KeyStringValuePair().setKey(`argument.${varName}`).setValue(value));
+        if (logArguments) {
+            for (const varName in logArguments) {
+                logTags.addData(new KeyStringValuePair()
+                    .setKey(`argument.${varName}`)
+                    .setValue(logArguments[varName]));
             }
         }
 
