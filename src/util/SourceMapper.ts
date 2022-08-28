@@ -3,6 +3,9 @@ import path from "path";
 import * as fs from "fs";
 import LiveSourceLocation from "../model/LiveSourceLocation";
 import * as vlq from 'vlq';
+import SourcePlusPlus from "../SourcePlusPlus";
+
+const debugLog = (...args: any[]) => SourcePlusPlus.debugLog(args);
 
 export default class SourceMapper {
     scriptLoaded: (sourceLocation: string, scriptId: string) => void;
@@ -56,7 +59,11 @@ export default class SourceMapper {
     mapLocation(location: LiveSourceLocation): MappedLocation {
         let mappedFile: MappedFile = this.mapped.get(location.source);
 
-        if (!mappedFile) return undefined;
+        if (!mappedFile) {
+            debugLog("SourceMapper.mapLocation", "No mapped file found for", location.source);
+            return undefined;
+        }
+        debugLog("SourceMapper.mapLocation", "Mapped file found for", location.source);
 
         return {
             scriptId: mappedFile.scriptId,

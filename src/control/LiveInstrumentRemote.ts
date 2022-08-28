@@ -9,6 +9,9 @@ import EventBus from "@vertx/eventbus-bridge-client.js";
 import LiveInstrumentCommand from "../model/command/LiveInstrumentCommand";
 import CommandType from "../model/command/CommandType";
 import VariableUtil from "../util/VariableUtil";
+import SourcePlusPlus from "../SourcePlusPlus";
+
+const debugLog = (...args: any[]) => SourcePlusPlus.debugLog(args);
 
 export interface VariableInfo {
     block: Runtime.PropertyDescriptor[]
@@ -221,6 +224,7 @@ export default class LiveInstrumentRemote {
     }
 
     private async setBreakpoint(scriptId: string, line: number): Promise<string> {
+        debugLog(`Setting breakpoint at ${scriptId}:${line}`);
         if (this.pendingBreakpoints.has(scriptId + ':' + line)) {
             return this.pendingBreakpoints.get(scriptId + ':' + line);
         }
@@ -253,6 +257,7 @@ export default class LiveInstrumentRemote {
     }
 
     async addInstrument(instrument: LiveInstrument): Promise<void> {
+        debugLog(`Adding instrument: ${instrument.id}`);
         if (this.instruments.get(instrument.id) || this.instrumentCache.get(instrument.id)) {
             return; // Instrument already exists or is in the cache
         }
@@ -287,6 +292,7 @@ export default class LiveInstrumentRemote {
     }
 
     removeInstrument(instrumentId: string) {
+        debugLog("Removing instrument: " + instrumentId);
         let instrument = this.instruments.get(instrumentId);
 
         if (!instrument) {
@@ -338,6 +344,7 @@ export default class LiveInstrumentRemote {
     }
 
     handleConditionalFailed(instrument: LiveInstrument, error: string) {
+        debugLog("Conditional failed for instrument: " + instrument.id + " - " + error);
         this.removeInstrument(instrument.id);
         this.eventBus.publish("spp.processor.status.live-instrument-removed", {
             occurredAt: Date.now(),
@@ -349,6 +356,7 @@ export default class LiveInstrumentRemote {
     // TODO: Call this regularly to clean up old instruments
     // TODO: Ensure the cache doesn't get too large
     private cleanCache() {
+        debugLog("Cleaning cache");
         let now = Date.now();
         this.instrumentCache.forEach((value, key) => {
             if (now - value.timeCached > 1000 * 60 * 60) {

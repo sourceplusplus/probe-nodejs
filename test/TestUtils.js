@@ -17,7 +17,7 @@ class TestUtils {
     static async setupProbe() {
         this.timeout(15000);
 
-        await SourcePlusPlus.start().then(function () {
+        await SourcePlusPlus.start(null, true).then(function () {
             console.log("SourcePlusPlus started");
         }).catch(function (err) {
             assert.fail(err);
