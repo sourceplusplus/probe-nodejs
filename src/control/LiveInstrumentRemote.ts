@@ -332,7 +332,6 @@ export default class LiveInstrumentRemote {
     }
 
     handleInstrumentCommand(command: LiveInstrumentCommand) {
-        debugLog("Received instrument command: " + command);
         if (command.commandType === CommandType.ADD_LIVE_INSTRUMENT) {
             command.instruments.forEach(this.addInstrument.bind(this));
         } else if (command.commandType === CommandType.REMOVE_LIVE_INSTRUMENT) {

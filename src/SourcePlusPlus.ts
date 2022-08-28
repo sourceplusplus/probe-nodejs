@@ -158,10 +158,12 @@ namespace SourcePlusPlus {
 
     function registerRemotes(eventBus: EventBus) {
         eventBus.registerHandler("spp.probe.command.live-instrument-remote", {}, (err, message) => {
+            debugLog("Received instrument command: " + message.body);
             liveInstrumentRemote.handleInstrumentCommand(
                 LiveInstrumentCommand.fromJson(message.body));
         });
         eventBus.registerHandler(`spp.probe.command.live-instrument-remote:${probeConfig.spp.probe_id}`, {}, (err, message) => {
+            debugLog("Received instrument command: " + message.body);
             liveInstrumentRemote.handleInstrumentCommand(
                 LiveInstrumentCommand.fromJson(message.body));
         });
