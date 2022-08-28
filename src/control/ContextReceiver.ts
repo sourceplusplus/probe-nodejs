@@ -9,6 +9,8 @@ import VariableUtil from "../util/VariableUtil";
 import ProbeMemory from "../ProbeMemory";
 import SourcePlusPlus from "../SourcePlusPlus";
 
+const debugLog = (...args: any[]) => SourcePlusPlus.debugLog(args);
+
 namespace ContextReceiver {
     let logReport;
 
@@ -50,7 +52,7 @@ namespace ContextReceiver {
 
     export function applyBreakpoint(breakpointId: string, source: string | undefined, line: number,
                                     frames: Debugger.CallFrame[], variables) {
-        SourcePlusPlus.debugLog(`applyBreakpoint: ${breakpointId} ${source} ${line}`);
+        debugLog(`applyBreakpoint: ${breakpointId} ${source} ${line}`);
         let activeSpan = ContextManager.current.newLocalSpan(callFrameToString(frames[0]));
 
         activeSpan.start();
@@ -95,7 +97,7 @@ namespace ContextReceiver {
     }
 
     export function applyLog(liveLogId: string, logFormat: string, logArguments: any) {
-        SourcePlusPlus.debugLog(`applyLog: ${liveLogId} ${logFormat} ${logArguments}`);
+        debugLog(`applyLog: ${liveLogId} ${logFormat} ${logArguments}`);
         let logTags = new LogTags();
         logTags.addData(new KeyStringValuePair().setKey('log_id').setValue(liveLogId));
         logTags.addData(new KeyStringValuePair().setKey('level').setValue('Live'));
