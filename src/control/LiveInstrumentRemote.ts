@@ -211,7 +211,7 @@ export default class LiveInstrumentRemote {
 
                     let promises = [];
                     for (let variable of result) {
-                        if (!variable.value.objectId) continue;
+                        if (!variable.value || !variable.value.objectId) continue;
                         promises.push(this.getVariable(variable.value.objectId, newRemainingDepth)
                             .then(res => variable.value.value = res));
                     }
