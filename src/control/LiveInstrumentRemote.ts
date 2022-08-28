@@ -9,8 +9,6 @@ import EventBus from "@vertx/eventbus-bridge-client.js";
 import LiveInstrumentCommand from "../model/command/LiveInstrumentCommand";
 import CommandType from "../model/command/CommandType";
 import VariableUtil from "../util/VariableUtil";
-import SourcePlusPlus from "../SourcePlusPlus";
-import debugLog = SourcePlusPlus.debugLog;
 
 export interface VariableInfo {
     block: Runtime.PropertyDescriptor[]
@@ -21,6 +19,12 @@ export interface VariableInfo {
 interface CachedInstrument {
     instrument: LiveInstrument
     timeCached: number
+}
+
+function debugLog(...args: any[]) {
+    if (true) { //todo: debug
+        console.log(...args);
+    }
 }
 
 export default class LiveInstrumentRemote {
