@@ -5,11 +5,12 @@ on:
     types: [published]
 
 jobs:
-  docker-release:
+  npm-release:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
+      - run: npm install
       - run: npm publish
         env:
             NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
