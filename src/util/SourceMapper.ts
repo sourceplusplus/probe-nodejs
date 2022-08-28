@@ -21,7 +21,6 @@ export default class SourceMapper {
     }
 
     map(scriptId: string, fileUrl: string, sourcemapFile?: string) {
-        debugLog("SourceMapper.map", scriptId, fileUrl, sourcemapFile);
         let basePath = process.cwd();
         let filePath = decodeURIComponent(url.parse(fileUrl).path);
         if (!filePath) {
