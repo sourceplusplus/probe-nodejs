@@ -7,12 +7,7 @@ import {LogReportServiceClient} from "skywalking-backend-js/lib/proto/logging/Lo
 import {Debugger} from "inspector";
 import VariableUtil from "../util/VariableUtil";
 import ProbeMemory from "../ProbeMemory";
-
-function debugLog(...args: any[]) {
-    if (true) { //todo: debug
-        console.log(...args);
-    }
-}
+import SourcePlusPlus from "../SourcePlusPlus";
 
 namespace ContextReceiver {
     let logReport;
@@ -55,7 +50,7 @@ namespace ContextReceiver {
 
     export function applyBreakpoint(breakpointId: string, source: string | undefined, line: number,
                                     frames: Debugger.CallFrame[], variables) {
-        debugLog(`applyBreakpoint: ${breakpointId} ${source} ${line}`);
+        SourcePlusPlus.debugLog(`applyBreakpoint: ${breakpointId} ${source} ${line}`);
         let activeSpan = ContextManager.current.newLocalSpan(callFrameToString(frames[0]));
 
         activeSpan.start();
@@ -100,7 +95,7 @@ namespace ContextReceiver {
     }
 
     export function applyLog(liveLogId: string, logFormat: string, logArguments: any) {
-        debugLog(`applyLog: ${liveLogId} ${logFormat} ${logArguments}`);
+        SourcePlusPlus.debugLog(`applyLog: ${liveLogId} ${logFormat} ${logArguments}`);
         let logTags = new LogTags();
         logTags.addData(new KeyStringValuePair().setKey('log_id').setValue(liveLogId));
         logTags.addData(new KeyStringValuePair().setKey('level').setValue('Live'));
