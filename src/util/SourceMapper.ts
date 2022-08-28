@@ -4,6 +4,12 @@ import * as fs from "fs";
 import LiveSourceLocation from "../model/LiveSourceLocation";
 import * as vlq from 'vlq';
 
+function debugLog(...args: any[]) {
+    if (true) { //todo: debug
+        console.log(...args);
+    }
+}
+
 export default class SourceMapper {
     scriptLoaded: (sourceLocation: string, scriptId: string) => void;
     mapped: Map<string, MappedFile>
@@ -15,6 +21,7 @@ export default class SourceMapper {
     }
 
     map(scriptId: string, fileUrl: string, sourcemapFile?: string) {
+        debugLog("SourceMapper.map", scriptId, fileUrl, sourcemapFile);
         let basePath = process.cwd();
         let filePath = decodeURIComponent(url.parse(fileUrl).path);
         if (!filePath) {
@@ -56,7 +63,11 @@ export default class SourceMapper {
     mapLocation(location: LiveSourceLocation): MappedLocation {
         let mappedFile: MappedFile = this.mapped.get(location.source);
 
-        if (!mappedFile) return undefined;
+        if (!mappedFile) {
+            debugLog("SourceMapper.mapLocation", "No mapped file found for", location.source);
+            return undefined;
+        }
+        debugLog("SourceMapper.mapLocation", "Mapped file found for", location.source);
 
         return {
             scriptId: mappedFile.scriptId,
