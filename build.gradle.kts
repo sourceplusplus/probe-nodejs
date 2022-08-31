@@ -18,8 +18,14 @@ tasks {
         file("e2e/").listFiles()?.forEach { if (it.name.endsWith(".tgz")) it.delete() }
     }
 
+    register<Exec>("installModules") {
+        executable = getNpm()
+        args("install")
+    }
+
     register<Exec>("makeDist") {
         dependsOn("cleanPackDir")
+        dependsOn("installModules")
         executable = getNpm()
         args("run", "build")
     }
