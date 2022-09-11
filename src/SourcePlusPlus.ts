@@ -64,9 +64,15 @@ namespace SourcePlusPlus {
 
         probeConfig.skywalking.collector.backend_service = getConfigValueString("SW_COLLECTOR_BACKEND_SERVICE",
             probeConfig.skywalking.collector.backend_service, `${probeConfig.spp.host}:${probeConfig.spp.grpc_port}`);
-        probeConfig.skywalking.agent.authentication = probeConfig.spp.authentication.tenant_id ?
-            `${probeConfig.spp.authentication.client_id}:${probeConfig.spp.authentication.client_secret}:${probeConfig.spp.authentication.tenant_id}`
-            : `${probeConfig.spp.authentication.client_id}:${probeConfig.spp.authentication.client_secret}`;
+
+        let authTenantId = probeConfig.spp?.authentication?.tenant_id;
+        let authClientId = probeConfig.spp?.authentication?.client_id;
+        let authClientSecret = probeConfig.spp?.authentication?.client_secret;
+        if (authTenantId && authClientId && authClientSecret) {
+            probeConfig.skywalking.agent.authentication = `${authClientId}:${authClientSecret}:${authTenantId}`;
+        } else if (authClientId && authClientSecret) {
+            probeConfig.skywalking.agent.authentication = `${authClientId}:${authClientSecret}`;
+        }
 
         // Copy given config
         Object.assign(probeConfig, config);
