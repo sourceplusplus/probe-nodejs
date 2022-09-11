@@ -53,8 +53,15 @@ namespace ContextReceiver {
     export function applyBreakpoint(breakpointId: string, source: string | undefined, line: number,
                                     frames: Debugger.CallFrame[], variables) {
         debugLog(`applyBreakpoint: ${breakpointId} ${source} ${line}`);
-        let activeSpan = ContextManager.current.newLocalSpan(callFrameToString(frames[0]));
 
+        let liveBreakpoint = SourcePlusPlus.liveInstrumentRemote.instruments.get(breakpointId);
+        if (liveBreakpoint.throttle.isRateLimited()) {
+            return;
+        } else {
+            //todo: eval condition
+        }
+
+        let activeSpan = ContextManager.current.newLocalSpan(callFrameToString(frames[0]));
         activeSpan.start();
 
         let localVars = variables['local'];
@@ -94,6 +101,16 @@ namespace ContextReceiver {
         })
 
         activeSpan.stop();
+
+        if (liveBreakpoint.isFinished()) {
+            debugLog(`Finished breakpoint: ${breakpointId}`);
+            SourcePlusPlus.liveInstrumentRemote.removeInstrument(breakpointId);
+
+            SourcePlusPlus.liveInstrumentRemote.eventBus.publish("spp.processor.status.live-instrument-removed", {
+                instrument: JSON.stringify(liveBreakpoint.toJson()),
+                occurredAt: Date.now()
+            })
+        }
     }
 
     export function applyLog(liveLogId: string, logFormat: string, logArguments: any) {
