@@ -136,7 +136,7 @@ namespace SourcePlusPlus {
     async function sendConnected(eventBus: EventBus): Promise<void> {
         let probeMetadata = {
             language: 'nodejs',
-            probe_version: '0.0.4', // TODO
+            probe_version: '0.0.5', // TODO
             nodejs_version: process.version,
             service: config.serviceName,
             service_instance: config.serviceInstance,
