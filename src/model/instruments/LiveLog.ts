@@ -28,4 +28,12 @@ export default class LiveLog extends LiveInstrument {
             })()`;
         }
     }
+
+    toJson(): any {
+        return {
+            ...super.toJson(),
+            logFormat: this.logFormat,
+            logArguments: this.logArguments
+        };
+    }
 }
