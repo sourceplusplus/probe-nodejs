@@ -32,7 +32,6 @@ export default class LiveInstrumentRemote {
     breakpointIdToInstrumentIds: Map<string, string[]> = new Map<string, string[]>();
     instrumentCache: Map<string, CachedInstrument> = new Map<string, CachedInstrument>();
     eventBus: EventBus;
-    pendingBreakpoints: Map<string, Promise<string>> = new Map<string, Promise<string>>();
 
     constructor(eventBus: EventBus) {
         this.eventBus = eventBus;
@@ -147,6 +146,7 @@ export default class LiveInstrumentRemote {
                             if (data[i].success) {
                                 let instrument = instruments[i];
                                 if (!instrument) {
+                                    debugLog(`Instrument ${instrumentIds[i]} not found`);
                                     continue;
                                 }
 
@@ -225,26 +225,23 @@ export default class LiveInstrumentRemote {
 
     private async setBreakpoint(scriptId: string, line: number): Promise<string> {
         debugLog(`Setting breakpoint at ${scriptId}:${line}`);
-        if (this.pendingBreakpoints.has(scriptId + ':' + line)) {
-            return this.pendingBreakpoints.get(scriptId + ':' + line);
-        }
-        let promise = new Promise<string>((resolve, reject) => this.session.post("Debugger.setBreakpoint", {
+        return new Promise<string>((resolve, reject) => this.session.post("Debugger.setBreakpoint", {
             location: {
                 scriptId: scriptId,
                 lineNumber: line
             }
         }, (err, res) => {
             if (err) {
+                debugLog(`Error setting breakpoint at ${scriptId}:${line}: ${err}`);
                 reject(err);
             } else {
                 resolve(res.breakpointId);
             }
         }));
-        this.pendingBreakpoints.set(scriptId + ':' + line, promise);
-        return promise;
     }
 
     private removeBreakpoint(breakpointId: string) {
+        debugLog(`Removing breakpoint ${breakpointId}`);
         this.breakpointIdToInstrumentIds.delete(breakpointId);
         this.locationToBreakpointId.forEach((value, key) => {
             if (value === breakpointId) {
@@ -279,7 +276,8 @@ export default class LiveInstrumentRemote {
         if (breakpointId) {
             this.breakpointIdToInstrumentIds.get(breakpointId).push(instrument.id);
             instrument.meta.breakpointId = breakpointId;
-            this.eventBus.publish("spp.processor.status.live-instrument-applied", instrument.toJson())
+            this.eventBus.publish("spp.processor.status.live-instrument-applied", instrument.toJson());
+            debugLog(`Applied instrument: ${JSON.stringify(instrument.toJson())}`);
             return;
         }
 
@@ -287,7 +285,8 @@ export default class LiveInstrumentRemote {
             this.locationToBreakpointId.set(location.scriptId + ":" + location.line, breakpointId);
             this.breakpointIdToInstrumentIds.set(breakpointId, [instrument.id]);
             instrument.meta.breakpointId = breakpointId;
-            this.eventBus.publish("spp.processor.status.live-instrument-applied", instrument.toJson())
+            this.eventBus.publish("spp.processor.status.live-instrument-applied", instrument.toJson());
+            debugLog(`Applied instrument: ${JSON.stringify(instrument.toJson())}`);
         })
     }
 
