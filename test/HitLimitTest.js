@@ -15,7 +15,7 @@ module.exports = function () {
         }, null, 1).then(function (res) {
             assert.equal(res.status, 200);
             //trigger breakpoint (after listener is registered)
-            setTimeout(() => hitLimit(), 1000);
+            setTimeout(() => hitLimit(), 500);
         }).catch(function (err) {
             assert.fail(err)
         });
