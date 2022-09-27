@@ -14,14 +14,15 @@ module.exports = function () {
             "line": TestUtils.getLineLabelNumber("done")
         }, null, 1).then(function (res) {
             assert.equal(res.status, 200);
-            hitLimit(); //trigger breakpoint
+            //trigger breakpoint (after listener is registered)
+            setTimeout(() => hitLimit(), 1000);
         }).catch(function (err) {
             assert.fail(err)
         });
     });
 
     it('verify breakpoint removed', async function () {
-        this.timeout(4000)
+        this.timeout(2000)
         let event = await TestUtils.awaitMarkerEvent("BREAKPOINT_REMOVED");
         assert.notEqual(event, null);
     });
