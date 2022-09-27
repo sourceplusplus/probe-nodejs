@@ -15,7 +15,9 @@ module.exports = function () {
             "line": TestUtils.getLineLabelNumber("done")
         }, null, 1, "arg i = {}", ["i"]).then(function (res) {
             assert.equal(res.status, 200);
-            simplePrimitives(); //trigger breakpoint
+
+            //trigger log (after listener is registered)
+            setTimeout(() => simplePrimitives(), 500);
         }).catch(function (err) {
             assert.fail(err)
         });
@@ -23,8 +25,6 @@ module.exports = function () {
 
     it('verify log data', async function () {
         this.timeout(2000)
-
-        setTimeout(() => simplePrimitives(), 1000);
 
         let event = await TestUtils.awaitMarkerEvent("LOG_HIT");
         let logResult = event.logResult
