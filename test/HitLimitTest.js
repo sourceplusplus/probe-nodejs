@@ -21,7 +21,7 @@ module.exports = function () {
     });
 
     it('verify breakpoint removed', async function () {
-        this.timeout(2000)
+        this.timeout(4000)
         let event = await TestUtils.awaitMarkerEvent("BREAKPOINT_REMOVED");
         assert.notEqual(event, null);
     });
