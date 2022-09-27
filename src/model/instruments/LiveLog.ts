@@ -21,7 +21,7 @@ export default class LiveLog extends LiveInstrument {
                 if (${this.condition}) { 
                     let data = {success: true}; 
                     (data => {${logArgumentsExpression}})(data); 
-                    returndata; 
+                    return data; 
                 } else { 
                     return {success: false}; 
                 }

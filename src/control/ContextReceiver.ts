@@ -8,6 +8,7 @@ import {Debugger} from "inspector";
 import VariableUtil from "../util/VariableUtil";
 import ProbeMemory from "../ProbeMemory";
 import SourcePlusPlus from "../SourcePlusPlus";
+import LiveLog from "../model/instruments/LiveLog";
 
 const debugLog = (...args: any[]) => SourcePlusPlus.debugLog(args);
 
@@ -25,7 +26,7 @@ namespace ContextReceiver {
         for (let scope in variables) {
             for (let variable of variables[scope]) {
                 if (variable.name === varName) {
-                    return variable;
+                    return variable.value?.value;
                 }
             }
         }
@@ -113,18 +114,25 @@ namespace ContextReceiver {
         }
     }
 
-    export function applyLog(liveLogId: string, logFormat: string, logArguments: any) {
-        debugLog(`applyLog: ${liveLogId} ${logFormat} ${logArguments}`);
+    export function applyLog(liveLog: LiveLog, variables) {
+        debugLog(`applyLog: ${liveLog.id} ${liveLog.logFormat}`);
+
+        if (liveLog.throttle.isRateLimited()) {
+            return;
+        } else {
+            //todo: eval condition
+        }
+
         let logTags = new LogTags();
-        logTags.addData(new KeyStringValuePair().setKey('log_id').setValue(liveLogId));
+        logTags.addData(new KeyStringValuePair().setKey('log_id').setValue(liveLog.id));
         logTags.addData(new KeyStringValuePair().setKey('level').setValue('Live'));
         logTags.addData(new KeyStringValuePair().setKey('thread').setValue('n/a'));
 
-        if (logArguments) {
-            for (const varName in logArguments) {
+        if (liveLog.logArguments) {
+            for (const varIndex in liveLog.logArguments) {
                 logTags.addData(new KeyStringValuePair()
-                    .setKey(`argument.${varName}`)
-                    .setValue(logArguments[varName]));
+                    .setKey(`argument.${varIndex}`)
+                    .setValue(tryFindVariable(liveLog.logArguments[varIndex], variables).toString() || 'undefined'));
             }
         }
 
@@ -135,7 +143,7 @@ namespace ContextReceiver {
             .setServiceinstance("TODO") // TODO: Config
             .setBody(new LogDataBody()
                 .setType("text")
-                .setText(new TextLog().setText(logFormat))
+                .setText(new TextLog().setText(liveLog.logFormat))
             )
             .setTracecontext(new TraceContext()
                 .setTraceid(swContext.segment.relatedTraces[0].toString())
