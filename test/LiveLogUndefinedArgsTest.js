@@ -3,17 +3,18 @@ const TestUtils = require("./TestUtils.js");
 
 module.exports = function () {
     function simplePrimitives() {
-        let i = 1
+        let i = undefined;
+        let i2 = null;
         TestUtils.addLineLabel("done", () => TestUtils.getLineNumber())
     }
 
-    it('add live log with args', async function () {
+    it('add live log with undefined args', async function () {
         simplePrimitives() //setup labels
 
         await TestUtils.addLiveLog({
             "source": TestUtils.getFilename()(),
             "line": TestUtils.getLineLabelNumber("done")
-        }, null, 1, "arg i = {}", ["i"]).then(function (res) {
+        }, null, 1, "arg i = {}, i2 = {}, i3 = {}", ["i", "i2", "i3"]).then(function (res) {
             assert.equal(res.status, 200);
 
             //trigger log (after listener is registered)
@@ -24,7 +25,7 @@ module.exports = function () {
     });
 
     it('verify log data', async function () {
-        this.timeout(2000)
+        this.timeout(200000)
 
         let event = await TestUtils.awaitMarkerEvent("LOG_HIT");
         let logResult = event.logResult
@@ -36,13 +37,14 @@ module.exports = function () {
 
         let log = logs[0]
         assert.notEqual(log, undefined);
-        assert.equal(log.content, "arg i = {}");
+        assert.equal(log.content, "arg i = {}, i2 = {}, i3 = {}");
 
         let args = log.arguments
         assert.notEqual(args, undefined);
-        assert.equal(args.length, 1);
+        assert.equal(args.length, 3);
 
-        let arg = args[0]
-        assert.equal(arg, "1");
+        assert.equal(args[0], "undefined");
+        assert.equal(args[1], "undefined");
+        assert.equal(args[2], "undefined");
     });
 };
