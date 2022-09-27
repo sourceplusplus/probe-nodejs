@@ -45,11 +45,11 @@ class TestUtils {
                     if (err) {
                         reject(err);
                     } else {
-                        //listen for breakpoint events
+                        //listen for instrument events
                         TestUtils.markerEventBus.registerHandler("spp.service.live-instrument.subscriber:system", {
                             "auth-token": await tokenPromise
                         }, function (err, message) {
-                            console.log(message);
+                            console.log("Received event: " + JSON.stringify(message));
                             if (!err) {
                                 if (TestUtils.markerListeners[message.body.eventType]) {
                                     TestUtils.markerListeners[message.body.eventType]
@@ -85,6 +85,8 @@ class TestUtils {
         if (!TestUtils.markerListeners[eventName]) {
             TestUtils.markerListeners[eventName] = [];
         }
+
+        console.log("Awaiting event: " + eventName);
         return new Promise(resolve => TestUtils.markerListeners[eventName].push(data => resolve(data)));
     }
 
