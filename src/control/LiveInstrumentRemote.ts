@@ -161,9 +161,8 @@ export default class LiveInstrumentRemote {
                                 } else if (instrument.type == LiveInstrumentType.LOG) {
                                     let logInstrument = <LiveLog>instrument;
                                     ContextReceiver.applyLog(
-                                        instrument.id,
-                                        logInstrument.logFormat,
-                                        data[i].logArguments
+                                        logInstrument,
+                                        variables
                                     );
                                 } else if (instrument.type == LiveInstrumentType.METER) {
                                     let meterInstrument = <LiveMeter>instrument;

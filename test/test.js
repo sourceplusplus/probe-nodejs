@@ -7,4 +7,5 @@ describe("test breakpoint after breakpoint", require("./BreakpointAfterBreakpoin
 describe("test simple primitives", require("./SimplePrimitivesLiveInstrumentTest"));
 describe("test simple collections", require("./SimpleCollectionsLiveInstrumentTest"));
 describe("test live log", require("./LiveLogTest"));
+describe("test live log with args", require("./LiveLogArgsTest"));
 describe("test hit limit", require("./HitLimitTest"));
