@@ -132,7 +132,7 @@ namespace ContextReceiver {
             for (const varIndex in liveLog.logArguments) {
                 logTags.addData(new KeyStringValuePair()
                     .setKey(`argument.${varIndex}`)
-                    .setValue(tryFindVariable(liveLog.logArguments[varIndex], variables).toString() || 'undefined'));
+                    .setValue(tryFindVariable(liveLog.logArguments[varIndex], variables)?.toString() || 'undefined'));
             }
         }
 
