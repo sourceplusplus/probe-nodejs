@@ -3,8 +3,6 @@ spp-probe:
   grpc_port: 11800
   rest_port: 12800
   quiet_mode: false
-  verify_host: false
-  ssl_enabled: false
   authentication:
     client_id: "test-id"
     client_secret: "test-secret"
