@@ -58,7 +58,7 @@ namespace SourcePlusPlus {
         probeConfig.spp.verify_host = getConfigValueBoolean('SPP_TLS_VERIFY_HOST',
             probeConfig.spp.verify_host, true);
         probeConfig.spp.ssl_enabled = getConfigValueBoolean('SPP_HTTP_SSL_ENABLED',
-            probeConfig.spp.ssl_enabled, true);
+            probeConfig.spp.ssl_enabled, false);
         probeConfig.skywalking.agent.service_name = getConfigValueString('SW_AGENT_SERVICE_NAME',
             probeConfig.skywalking.agent.service_name, 'spp-probe');
 
