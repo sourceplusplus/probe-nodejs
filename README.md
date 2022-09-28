@@ -1,4 +1,4 @@
-# ![](https://github.com/sourceplusplus/live-platform/blob/master/.github/media/sourcepp_logo.svg)
+# ![](https://github.com/sourceplusplus/sourceplusplus/blob/master/.github/media/sourcepp_logo.svg)
 
 [![License](https://img.shields.io/github/license/sourceplusplus/probe-python)](LICENSE)
 [![NPM](https://img.shields.io/npm/v/sourceplusplus?color=blue)](https://www.npmjs.com/package/sourceplusplus)
@@ -8,7 +8,7 @@
 
 > Note: This project is a work in progress. Not all features are implemented yet.
 
-This project provides Node.js support to the [Source++](https://github.com/sourceplusplus/live-platform) open-source live coding platform.
+This project provides Node.js support to the [Source++](https://github.com/sourceplusplus/sourceplusplus) open-source live coding platform.
 
 # Usage
 
