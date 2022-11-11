@@ -1,7 +1,7 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 plugins {
-    id("com.avast.gradle.docker-compose") version "0.16.10"
+    id("com.avast.gradle.docker-compose") version "0.16.11"
 }
 
 tasks {
