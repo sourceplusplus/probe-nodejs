@@ -18,7 +18,14 @@ namespace ContextReceiver {
     export function initialize() {
         logReport = new LogReportServiceClient(
             config.collectorAddress,
-            config.secure ? grpc.credentials.createSsl() : grpc.credentials.createInsecure()
+            config.secure ? grpc.credentials.combineChannelCredentials(
+                grpc.credentials.createSsl(),
+                grpc.credentials.createFromMetadataGenerator((params, callback) => {
+                        const metadata = new grpc.Metadata();
+                        metadata.add('Authentication', config.authorization);
+                        callback(null, metadata);
+                    }
+                )) : grpc.credentials.createInsecure(),
         );
     }
 
