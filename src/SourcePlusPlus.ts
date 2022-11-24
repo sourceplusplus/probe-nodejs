@@ -40,6 +40,7 @@ namespace SourcePlusPlus {
         probeConfig = {}; // TODO: Make model for this?
         if (fs.existsSync(probeConfigFile)) {
             probeConfig = YAML.parse(fs.readFileSync(probeConfigFile, 'utf8'));
+            debugLog('Loaded config from file: ' + probeConfigFile);
         }
 
         probeConfig.spp = probeConfig["spp-probe"] || {};
