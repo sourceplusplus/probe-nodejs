@@ -91,8 +91,7 @@ namespace SourcePlusPlus {
         config.collectorAddress = probeConfig.skywalking.collector.backend_service;
         config.serviceName = probeConfig.skywalking.agent.service_name;
         config.authorization = probeConfig.skywalking.agent.authentication;
-        // TODO: logReporterActive doesn't exist?
-        config.secure = false; //todo: fix this and SW_RECEIVER_GRPC_SSL_ENABLED=false
+        config.secure = probeConfig.spp.ssl_enabled;
 
         debugLog("Connecting to SkyWalking with config ", config);
 
