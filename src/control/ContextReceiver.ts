@@ -25,7 +25,7 @@ namespace ContextReceiver {
                         metadata.add('Authentication', config.authorization);
                         callback(null, metadata);
                     }
-                )) : grpc.credentials.createInsecure(),
+                )) : grpc.credentials.createInsecure()
         );
     }
 
