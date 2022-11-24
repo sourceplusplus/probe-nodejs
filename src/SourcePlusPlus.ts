@@ -1,5 +1,6 @@
 import YAML from 'yaml'
 import * as fs from "fs";
+import {resolve} from 'path';
 import {randomUUID} from "crypto";
 import config from "skywalking-backend-js/lib/config/AgentConfig";
 import agent from "skywalking-backend-js/lib";
@@ -40,7 +41,7 @@ namespace SourcePlusPlus {
         probeConfig = {}; // TODO: Make model for this?
         if (fs.existsSync(probeConfigFile)) {
             probeConfig = YAML.parse(fs.readFileSync(probeConfigFile, 'utf8'));
-            debugLog('Loaded config from file: ' + probeConfigFile);
+            debugLog('Loaded config from file: ' + resolve(probeConfigFile));
         }
 
         probeConfig.spp = probeConfig["spp-probe"] || {};
