@@ -40,8 +40,8 @@ namespace SourcePlusPlus {
         let probeConfigFile = process.env.PROBE_CONFIG_FILE || 'spp-probe.yml';
         probeConfig = {}; // TODO: Make model for this?
         if (fs.existsSync(probeConfigFile)) {
+            debugLog('Loading config from file: ' + resolve(probeConfigFile));
             probeConfig = YAML.parse(fs.readFileSync(probeConfigFile, 'utf8'));
-            debugLog('Loaded config from file: ' + resolve(probeConfigFile));
         }
 
         probeConfig.spp = probeConfig["spp-probe"] || {};
