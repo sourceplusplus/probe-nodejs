@@ -19,7 +19,7 @@
   },
   "peerDependencies": {
     "@vertx/eventbus-bridge-client.js": "^1.0.0-3-SNAPSHOT",
-    "skywalking-backend-js": "^0.5.1",
+    "skywalking-backend-js": "^0.6.0",
     "vlq": "^2.0.4",
     "yaml": "^2.1.1"
   },
