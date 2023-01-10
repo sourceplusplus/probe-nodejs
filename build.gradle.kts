@@ -35,17 +35,6 @@ tasks {
         executable = getNpm()
         args("pack", "--pack-destination=./pack")
     }
-
-    register<Copy>("updateDockerFiles") {
-        dependsOn("buildDist", "cleanE2EDir")
-        from("pack/")
-        into("e2e/")
-    }
-
-    register("assembleUp") {
-        dependsOn("updateDockerFiles", "composeUp")
-    }
-    getByName("composeUp").mustRunAfter("updateDockerFiles")
 }
 
 dockerCompose {
