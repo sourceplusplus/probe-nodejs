@@ -53,7 +53,7 @@ class TestUtils {
                             if (!err) {
                                 if (TestUtils.markerListeners[message.body.eventType]) {
                                     TestUtils.markerListeners[message.body.eventType]
-                                        .forEach(listener => listener(JSON.parse(message.body.data)));
+                                        .forEach(listener => listener(message.body));
                                 }
                             }
                         });
