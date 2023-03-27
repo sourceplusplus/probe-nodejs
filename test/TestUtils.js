@@ -40,14 +40,14 @@ class TestUtils {
                     connectionTime: Date.now(),
                     meta: {}
                 }, {
-                    "access-token": await tokenPromise
+                    "auth-token": await tokenPromise
                 }, async (err) => {
                     if (err) {
                         reject(err);
                     } else {
                         //listen for instrument events
                         TestUtils.markerEventBus.registerHandler("spp.service.live-instrument.subscriber:system", {
-                            "access-token": await tokenPromise
+                            "auth-token": await tokenPromise
                         }, function (err, message) {
                             console.log("Received event: " + JSON.stringify(message));
                             if (!err) {
