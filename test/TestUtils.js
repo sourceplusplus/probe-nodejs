@@ -5,7 +5,7 @@ const SourcePlusPlus = require("../dist/SourcePlusPlus");
 const EventBus = require("@vertx/eventbus-bridge-client.js");
 const path = require("path");
 
-const tokenPromise = axios.get(`${host}/api/new-token?access_token=change-me`)
+const tokenPromise = axios.get(`${host}/api/new-token?authorization_code=change-me`)
     .then(response => response.data);
 
 class TestUtils {
@@ -40,14 +40,14 @@ class TestUtils {
                     connectionTime: Date.now(),
                     meta: {}
                 }, {
-                    "auth-token": await tokenPromise
+                    "access-token": await tokenPromise
                 }, async (err) => {
                     if (err) {
                         reject(err);
                     } else {
                         //listen for instrument events
                         TestUtils.markerEventBus.registerHandler("spp.service.live-instrument.subscriber:system", {
-                            "auth-token": await tokenPromise
+                            "access-token": await tokenPromise
                         }, function (err, message) {
                             console.log("Received event: " + JSON.stringify(message));
                             if (!err) {
