@@ -164,7 +164,7 @@ class TestUtils {
         do {
             var frame = stack.shift();
         } while (!frameRE.exec(frame) && stack.length);
-        return frameRE.exec(stack.shift())[1];
+        return Number(frameRE.exec(stack.shift())[1]);
     }
 
     static getFilename = () => {
