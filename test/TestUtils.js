@@ -101,7 +101,7 @@ class TestUtils {
     static async addLiveBreakpoint(location, condition, hitLimit) {
         const options = {
             method: 'POST',
-            url: `${host}/graphql/spp`,
+            url: `${host}/graphql`,
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: 'Bearer ' + await tokenPromise
@@ -124,7 +124,7 @@ class TestUtils {
     static async addLiveLog(location, condition, hitLimit, logFormat, logArguments) {
         const options = {
             method: 'POST',
-            url: `${host}/graphql/spp`,
+            url: `${host}/graphql`,
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: 'Bearer ' + await tokenPromise
